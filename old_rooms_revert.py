@@ -68,7 +68,7 @@ class Player():
 		# this needs to happen here (and not in update grid) because the
 		# player coords get changed in the following code, so we need to grab
 		# the old coords and store them first, before they change.
-		self.previous_coords = self.player_coords[:]  # the : is CRUCIAL!!! (copy not reference)
+		self.previous_coords = self.player_coords.copy()  # the : is CRUCIAL!!! (copy not reference)
 
 		if direction_choice == 'N' and self.player_coords[0] > 0:
 			self.player_coords[0] -= 1
