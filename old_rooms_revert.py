@@ -80,6 +80,10 @@ class Player():
 			self.player_coords[1] -= 1
 		else:
 			print('Sorry, you\'ve hit a boundary and cannot proceed that way!\n')
+			return False
+		 
+		print('\n')
+		return True
 
 # this function is no longer used by I'm leaving it here because it's...elegant.
 def play_again(): 
@@ -99,7 +103,7 @@ game_active = True
 # redrawn to show players choice...
 
 print("\033[H\033[J") #clear screen 
-print('\nWelcome to the Dungeon!\n')
+print('Welcome to the Dungeon!\n')
 
 grid.grid[0][0] = ' X '
 grid.print_grid()
@@ -114,8 +118,8 @@ while game_active:
 	# we return to the start of this while loop, and otherwise move on to update_grid, etc?
 	# because currently if there's a boundary collision we still run the next two functions,
 	# but we don't want to in case of a boundary collision
-	player.compute_move_coords(direction_choice)
-	grid.update_grid()
+	if player.compute_move_coords(direction_choice) == True:
+		grid.update_grid()
 	grid.print_grid()
 
 	#if not play_again():
