@@ -251,25 +251,21 @@ class GameLog():
 
 class RoomBook():
 	"""An object that stores all the possible text strings for dungeon rooms"""
-	def __init__(self):
+	def __init__(self): #  TODO: consider storing all text in an actual text file and reading from it. 
 		"""stores all the text strings for each room type"""
-		self.start_text = '''\nI'm at the entrance to the dungeon. I sure hope I find treasure inside, 
-and not anything nasty!
+		self.start_text = '''\nI'm at the entrance to the dungeon. I sure hope I find treasure inside, \nand not anything nasty!
 		'''
 
-		self.empty_text = '''\nI'm entering a large, dark room. Looking around, there appears to be nothing 
-inside other than dust, debris and more dust. This room is empty.'''
+		self.empty_text = '''\nI'm entering a large, dark room. Looking around, there appears to be nothing \ninside other than dust, debris and more dust. This room is empty.'''
 		
 
 		self.monster_text = '''\nI've entered a very dark room. Something is approaching...it's a Monster!
 		'''
 
-		self.treasure_text = '''\nI'm standing in a room with a very high ceiling. There's an alter at the 
-center with something on top...it's treasure!'''
+		self.treasure_text = '''\nI'm standing in a room with a very high ceiling. There's an alter at the \ncenter with something on top...it's treasure!'''
 		
 
-		self.exit_text = '''\nI'm standing in a long, narrow corridor. There's a large, engraded gate at the 
-end of this passage. I think this must be the exit!'''
+		self.exit_text = '''\nI'm standing in a long, narrow corridor. There's a large, engraded gate at the \nend of this passage. I think this must be the exit!'''
 
 		# all the text entries stored in one dictionary, indexed by room type
 		

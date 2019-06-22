@@ -26,8 +26,9 @@ class Grid():
 
 	def update_grid(self):
 		"""looks at user coords to update location of player"""
-		self.grid[self.player.player_coords[0]][self.player.player_coords[1]] = ' X '
 		self.grid[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' * '
+		self.grid[self.player.player_coords[0]][self.player.player_coords[1]] = ' X '
+		
 
 	def print_grid(self):
 		"""prints the grid, that's it!"""
@@ -112,6 +113,8 @@ while game_active:
 	direction_choice = player.get_move_direction()
 	if direction_choice == 'Q':
 		#game_active = False	# not good, because rest of loop executes once...
+		# uh...just use an else, no? only two options for what executes: the if (quit) or
+		# the else, the rest of the commands.
 		break
 	print("\033[H\033[J")	# clear the screen
 	# can you use 'continue' in here so that if computer_move_coords results in a boundary collision,
