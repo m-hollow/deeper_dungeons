@@ -63,11 +63,11 @@ class GameGrid():
 		
 		row_num = 0
 
-		for r in self.grid_matrix:
+		for r in self.grid_matrix:		# r is a list, but it's really just used as a range here
 
 			col_num = 0
 			
-			for c in r:
+			for c in r:					# c is a string (literally a ' * ') but is also used as range here 
 				room_type = self.get_room_type()
 				room = {'Coords':[row_num, col_num], 'Type':room_type}
 				all_rooms.append(room)
@@ -438,5 +438,6 @@ run_game()
 # needs to happen in while loop, but how exactly? 
 
 
-
+# you're going to need various update functions added. for example, a global sort of 'current room' tracker
+# that will need to be updated in the main game loop, by looking at current player location, etc.
 
