@@ -1,5 +1,6 @@
 import time
 from random import randint
+import copy
 
 # define game objects
 
@@ -25,7 +26,7 @@ class GameSettings():
 		print('PLAYER LOCATION........X')
 		print('UNEXPLORED ROOM....... *')
 		print('TREASURE...............T')
-		print('ENEMY ENCOUTNER........E')
+		print('ENEMY ENCOUNTER........E')
 
 class GameGrid():
 	"""Creates a grid object for the game of variable size"""
@@ -37,48 +38,55 @@ class GameGrid():
 		self.row = self.settings.grid_size
 		self.col = self.settings.grid_size
 
-		self.grid_matrix = self.make_grid()
-		self.all_rooms = self.generate_rooms()
-		self.player_start = self.find_start_room(self.all_rooms, self.player.player_start_location)
-		#self.exit_room = self.choose_exit_room()
+		self.grid_matrix = self.make_grid()			# grid for graphics, containing strings '*'
+		self.all_room_grid = self.generate_rooms()  # grid for room data, containing room dictionaries
 
-		self.current_room_coords = self.player.player_location
-		self.current_room_type = self.find_current_room(self.all_rooms, self.current_room_coords)
+		self.create_exit()	# doesnt need to return anything, just adds the exit on construction
+		self.create_start() # same
+
+		# is this used for anything? update_player_location func is using self.player.playerlocation to update grid_matrix
+		self.current_room_coords = self.player.player_location #list of two ints representing x and y coords
+
+		# this is accessed by the gamelog and used to determine which room message is printed.
+		# perhaps also used as primary means to determine room type during movement ??
+		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] 
 
 	def make_grid(self):
 		# list comprehension to create matrix of the game grid
 
 		grid_matrix = [[' * ' for x in range(self.col)] for y in range(self.row)]
 
-		# update this to simply grab the info from the player_location list attribute
-		# grid_matrix[self.player.player_location[0]][self.player.player_location[1]]
-
-		grid_matrix[self.player.player_row][self.player.player_col] = ' X '
-
 		return grid_matrix
 
+	def update_player_location(self):
+		"""updates the grid_matrix to show the X for the player coordinates"""
+
+		self.grid_matrix[self.player.player_location[0]][self.player.player_location[1]] = ' X '
+
+	def update_current_roomtype(self):
+		"""udpate the current_room_type attribute to reflect current player location"""
+
+		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type']
+
 	def generate_rooms(self):
-		"""create a room for each cooridnate in the grid matrix"""
-		all_rooms = []
+		"""create a room for each coordinate in the grid matrix"""
+		all_room_grid = []	# will become a matrix (a list of lists) containing room dictionaries
 		
-		row_num = 0
+		for r in self.grid_matrix:		# r is a list
 
-		for r in self.grid_matrix:		# r is a list, but it's really just used as a range here
+			row = []
 
-			col_num = 0
-			
-			for c in r:					# c is a string (literally a ' * ') but is also used as range here 
+			for c in r:					# c is a string ('*'), num of loops will = num of * in list r
 				room_type = self.get_room_type()
-				room = {'Coords':[row_num, col_num], 'Type':room_type}
-				all_rooms.append(room)
-				col_num += 1
+				room = {'Type':room_type, 'Visited':False} 
+				row.append(room)
 
-			row_num += 1
-
-		return all_rooms
+			all_room_grid.append(row)
+			
+		return all_room_grid
 
 	def get_room_type(self):
-		"""called by generate rooms function to make one random room"""
+		"""called by generate_rooms function to make one random room"""
 		room_type = ''
 		num = randint(1,8)
 
@@ -91,34 +99,19 @@ class GameGrid():
 		
 		return room_type
 
-	def find_start_room(self, all_rooms, room_to_find):
-		"""locate start room in grid based on player_start_location, label as such in room dictionary"""
+	def create_exit(self):
+		random_x = randint(0, self.row - 1)
+		random_y = randint(0, self.col - 1 )
 
-		index = 1
+		self.all_room_grid[random_x][random_y]['Type'] = 'Exit' 
 
-		for room_dict in all_rooms:
-			if room_dict['Coords'] == room_to_find:
-				all_rooms[index-1]['Type'] = 'Start'
-			else:
-				pass
+	def create_start(self):
 
-			index += 1
-
-	def find_current_room(self, all_rooms, room_to_find):
-		"""determine the type of the current room based on contrasting player coords and dungeon grid info"""
-
-		index = 1
-		current_room_type = ''
-
-		for room_dict in all_rooms:
-			if room_dict['Coords'] == room_to_find:
-				current_room_type = room_dict['Type']
-
-		return current_room_type
+		self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] = 'Start'
 
 	def print_grid(self):
 		"""print the visual game grid"""
-		clear_screen()
+		clear_screen() # this is actually interesting; a class object is calling a standard function
 
 		print('# DUNGEON MAP #\n')
 
@@ -128,6 +121,40 @@ class GameGrid():
 			print()						# use print('\n' to space out grid further)
 
 		print('\n{} is located at X'.format(self.player.info['Name']))
+
+		press_enter() # and same here, class object calls function that exists outside the object
+
+	def dev_grid_showtypes(self):
+		"""for dev testing, not gameplay: show current properties of all rooms"""
+		
+		clear_screen()
+
+		r = 0
+
+		#grid_matrix_copy = self.grid_matrix[:]	  # doesn't work, does a shallow copy
+
+		grid_matrix_copy = copy.deepcopy(self.grid_matrix)
+
+		for row in self.all_room_grid:
+			c = 0
+			for col in row:
+				if col['Type'] == 'Empty':				 
+					grid_matrix_copy[r][c] = ' E '		
+				elif col['Type'] == 'Monster':			
+					grid_matrix_copy[r][c] = ' M '
+				elif col['Type'] == 'Treasure':
+					grid_matrix_copy[r][c] = ' T '
+				elif col['Type'] == 'Exit':
+					grid_matrix_copy[r][c] = ' @ '
+
+				c += 1
+			r += 1
+
+		# print the dev grid
+		for row in grid_matrix_copy:
+			for val in row:
+				print(val, end = '')
+			print()
 
 		press_enter()
 
@@ -147,36 +174,21 @@ class Player():
 	def __init__(self, settings):
 		self.settings = settings
 
+		self.created = False
 		self.info = {'Name':'', 'Race':''}
 		self.stats = {'Level': 1, 'HP': 10, 'GOLD':self.settings.starting_gold}
 
-		# the value for key Items needs to be a LIST. figure out how to implement / index
-		self.inventory = {'Weapon':'None', 'Clothing':'Old Shirt', 'Items':'Torch'}
-
-		# self.grid_max = self.settings.grid_size
-
-		# below attributes are redundant, you could just type the code directly into player_location
-		# BUT, if you do that, the grid class will need to be updated to get info from player_location
-		# rather than these two attributes!
-		# also raises a question of: if you update these in the movement() function, does the 
-		# player location attribute update as well? I'm guessing -no-, it's only deteremined upon
-		# instantation of the object instance, and must be updated manually after that.
-		self.player_row = (self.settings.grid_size - 1)
-		self.player_col = (int(self.settings.grid_size / 2) - 1 )
+		self.inventory = {'Weapon':'None', 'Clothing':'Old Shirt', 'Items':'Torch'} #make items value a list
 
 		# start location, fixed value for every new grid created, same as initial player row and col vals
 		self.player_start_location = [self.settings.grid_size - 1, (int(self.settings.grid_size / 2) - 1)]
+		
 		#list of current coordinates for player, will constantly be modified
-		self.player_location = [self.player_row, self.player_col]
+		self.player_location = [(self.settings.grid_size - 1), (int(self.settings.grid_size / 2) - 1)] 
 
 	def build_player(self):
 		"""fill dictionary with user character choices"""
 		
-		clear_screen()
-
-		print("Let's build your character before starting.")
-		
-		press_enter()
 		clear_screen()
 
 		a = input('What is the name of your character? ')
@@ -190,7 +202,7 @@ class Player():
 		print('You have successfully created {} the {}.'.format(a.title(), b.title()))
 		print('You will begin with {} Hit Points and {} Gold Pieces.'.format(self.stats['HP'], 
 			self.stats['GOLD']))
-		print('\nIt\'s time to enter the dungeon!')
+		print('\nYou are now ready to start the game!')
 
 		press_enter()
 
@@ -218,17 +230,12 @@ class Player():
 
 		press_enter()
 
-
-	def player_movement(self):
-		"""function to move the players location on the grid"""
-
 class GameLog():
 	"""an object that contains the game log and displays its contents as necessary"""
 	def __init__(self, grid):
 		self.grid = grid
 		self.room_book = RoomBook()
-		self.current_room = self.grid.current_room_type
-		# do we need self.current_message = '' ?
+		self.current_room = 'None'
 	
 	def get_current_message(self):
 		if self.grid.current_room_type == 'Start':
@@ -245,30 +252,37 @@ class GameLog():
 		return self.current_message
 
 	def update_room_type(self):
-		"""This needs to be called continually to update room as current_room_type changes"""
-		# otherwise gamelog room will just stay fixed at value obtained during construction
-		self.current_room = self.grid.current_room_type
+		"""is this even necessary? doesn't the grid updating cover this behavior?"""
+		# need to think this one through.. is it redundant, or necessary...think about construction
+		self.current_room = self.grid.current_room_type #self.current_room doesn't even exist...
+
+		# current conclusion:
+		# this is necessary if you're defining the current_room attribute in __init__
+		# what's fascinating is that previously, you *did not* define it there, but the run_game_log function
+		# was nonetheless able to find it, HERE, in the method update_room_type, and get the value from there.
+		# which seems actually BETTER, because it means you don't need to keep updating the attribute
+		# (because if it IS defined as an attribute upon instantiation, you then need to update it...)
 
 class RoomBook():
 	"""An object that stores all the possible text strings for dungeon rooms"""
 	def __init__(self): #  TODO: consider storing all text in an actual text file and reading from it. 
 		"""stores all the text strings for each room type"""
-		self.start_text = '''\nI'm at the entrance to the dungeon. I sure hope I find treasure inside, \nand not anything nasty!
-		'''
+		self.start_text = '''\nI'm at the entrance to the dungeon. I sure hope I find treasure inside, \nand not anything nasty!'''
+		
 
 		self.empty_text = '''\nI'm entering a large, dark room. Looking around, there appears to be nothing \ninside other than dust, debris and more dust. This room is empty.'''
 		
 
-		self.monster_text = '''\nI've entered a very dark room. Something is approaching...it's a Monster!
-		'''
+		self.monster_text = '''\nI've entered a very dark room. Something is approaching...it's a Monster!'''
+		
 
 		self.treasure_text = '''\nI'm standing in a room with a very high ceiling. There's an alter at the \ncenter with something on top...it's treasure!'''
 		
 
-		self.exit_text = '''\nI'm standing in a long, narrow corridor. There's a large, engraded gate at the \nend of this passage. I think this must be the exit!'''
+		self.exit_text = '''\nI'm standing in a long, narrow corridor. There's a large, engraved gate at the \nend of this passage. I think this must be the exit!'''
 
 		# all the text entries stored in one dictionary, indexed by room type
-		
+		# this isn't currently used
 		self.room_book = {'Start':self.start_text, 'Empty':self.empty_text, 'Monster':self.monster_text, 'Treasure':
 			self.treasure_text, 'Exit':self.exit_text}
 
@@ -298,11 +312,35 @@ class MainMenu():
 			choice = input(msg)
 			if choice in possible_choices:
 				active = False
-				return int(choice)
+				return int(choice) # is active = False redundant since the return will exit the loop and function?
 			else:
 				print('That\'s not one of the menu options!')
 
 # define game functions.
+
+def main_menu():
+	"""displays main program menu, takes user input choice"""
+
+	clear_screen()
+
+	print('#   DEEPER DUNGEONS   #\n')
+	print('1. Build Character')
+	print('2. Start New Game')
+	print('3. Load Game')
+	print('4. Change Game Settings')
+	print('5. Exit Game')
+
+	possible_choices = ['1','2','3','4','5']
+	active = True
+
+	while active:
+		msg = '\nEnter your choice: '
+		choice = input(msg)
+		if choice in possible_choices:
+			active = False #unnecessary because return will exit loop and function?
+			return int(choice)
+		else:
+			print('That\'s not one of the menu options!')
 
 def press_enter():
 	msg = '\nOK...'
@@ -312,33 +350,31 @@ def clear_screen():
 	"""simple command to clear the game screen"""
 	print("\033[H\033[J")
 
-#def player_moves():
-#	"""receives player input for movement and updates class attributes accordingly"""
-
 def run_game_log(player, game_log):	
 	"""updates and prints the current gamelog"""
 
-	game_log.update_room_type()
+	game_log.update_room_type()		# seems like ideally this would happen elsewhere, specifically in an 'update' function, not here
 	current_msg = game_log.get_current_message()
 
 	print('HP: {} GOLD: {}'.format(player.stats['HP'], player.stats['GOLD']))
-	print('CURRENT ROOM: {}\n'.format(game_log.current_room))
-	print("{}'s LOG: {}".format(player.info['Name'].upper(), current_msg))
+	print('CURRENT ROOM: {}\n'.format(game_log.current_room)) # why does this work ??!!?? 
+	print("{}'s LOG: {}\n".format(player.info['Name'].upper(), current_msg))
 
-def action_menu(player):
-	"""print menu of game actions and take user input"""
+def action_menu(player, game_log):
+	"""print the game_log, and a menu of game actions, and take user input"""
 
 	clear_screen()
 
-	run_game_log(player, game_log)	# runs the run_game_log function which gets output from game_log class
+	run_game_log(player, game_log)
 
 	print('1. Move')
 	print('2. Show Map')
 	print('3. Show Player Inventory')
 	print('4. Show Player Stats')
 	print('5. Exit to Main Menu')
+	print('6. (dev) show dev map')
 
-	possible_choices = ['1','2','3','4','5']
+	possible_choices = ['1','2','3','4','5','6']
 	active = True
 
 	while active:
@@ -349,21 +385,18 @@ def action_menu(player):
 		else:
 			print('That\'s not one of the menu options!')
 
-def game_action(settings, player, grid_one, d6, d20):
-	
-	# need an if here in case the player is already built
-	# that is, skip the call to build_player if saved game has been loaded
-	player.build_player()
+def game_action(settings, player, grid_one, game_log, d6, d20):
 
 	active = True
-	# Q: this game_action loop is running -within- the broader while loop of run_game
-	# is that standard for game structure, a while loop that runs inside another running while loop?
-	# is it efficient / are there any issues to consider?
-	# what's more, you have a *third* while loop nested in this series, inside action_menu
-	# while loop nesting:  run_game > game_action > action_menu
+	
 	while active:
-		# main game action loop
-		selection = action_menu(player)	#right now this is what prints action menu...
+		# main game event loop for -game in state of play- (as opposed to game at main menu not in play)
+
+		grid_one.update_player_location()
+
+		# run_game_log(player, game_log)      # doesn't work here right now because action_menu call clears screen!
+
+		selection = action_menu(player, game_log)	#right now this is what prints action menu...
 
 		if selection == 1:
 			"""this needs to launch the player movement function and update location"""
@@ -384,28 +417,43 @@ def game_action(settings, player, grid_one, d6, d20):
 			"""Unfinished"""
 			player.print_player_info()
 
+		elif selection == 6:
+			grid_one.dev_grid_showtypes()
+
 		elif selection == 5:
 			print('Returning to Main Menu...')
 			active = False
 
-		else:
+		else:			# this else is redundant, the validation checking happens inside action_menu
 			print('That is not one of the menu options!')
 			press_enter()
 
 def run_game():	
+	"""prints Main Menu and takes user input"""
 
 	active = True
 
 	while active:
-		main_menu.print_menu()
-		user_action = main_menu.main_choice()
 
-		if user_action == 4:
+		user_action = main_menu()
+
+		if user_action == 5:
 			print('\nThanks for playing Deeper Dungeons!')
+			print()
 			active = False
 
 		elif user_action == 1:
-			game_action(settings, player, grid_one, d6, d20)
+
+			player.build_player()
+			player.created = True
+
+		elif user_action == 2:
+
+			if player.created:
+				game_action(settings, player, grid_one, game_log, d6, d20)
+			else:
+				print('\nYou need to create a character first!')
+				press_enter()
 
 		else:
 			print('\nSorry, that part of the game is still being developed.')
@@ -414,26 +462,16 @@ def run_game():
 # instantiate game objects
 
 settings = GameSettings()
-
 player = Player(settings)
 grid_one = GameGrid(settings, player)
 game_log = GameLog(grid_one)
-main_menu = MainMenu()
 
 d6 = Dice()
 d10 = Dice(10)
 d20 = Dice(20)
-d100 = Dice(100)
 
 # call the main run_game function loop
 run_game()
 
-# important... when does game 'check' the attribute states to see if player is dead, game_over, etc?
-# you can regularly update those attribute values based on player actions, but how does the game check
-# them regularly to determine overall game status?
-# needs to happen in while loop, but how exactly? 
 
-
-# you're going to need various update functions added. for example, a global sort of 'current room' tracker
-# that will need to be updated in the main game loop, by looking at current player location, etc.
 

@@ -1,9 +1,4 @@
 
-# new goals:
-# 1. DONE instead of entering coordinates, user inputs N, S, E, W
-# 2. DONE boundary checking to prevent out of range error
-# 3. DONE previously entered rooms revert to * instead of staying an X
-
 class Grid():
 
 	def __init__(self, player):
@@ -19,9 +14,8 @@ class Grid():
 
 	def update_grid(self):
 		"""looks at user coords to update location of player"""
-		self.grid[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' * '
 		self.grid[self.player.player_coords[0]][self.player.player_coords[1]] = ' X '
-		
+		self.grid[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' * '
 
 	def print_grid(self):
 		"""prints the grid, that's it!"""
@@ -41,8 +35,7 @@ class Player():
 		
 		msg = '\nEnter direction to move (N,S,E,W) or Q to Quit: '
 		active = True 
-	
-		# the return will exit the loop, so do we actually need the 'active' variable?
+
 		while active:
 			
 			possible_answers = ['N','S','E','W','Q']
@@ -56,7 +49,7 @@ class Player():
 
 	def compute_move_coords(self, direction_choice):
 		"""modify player coords based on chosen movement direction"""
-		self.previous_coords = self.player_coords.copy()
+		self.previous_coords = self.player_coords[:] 
 
 		if direction_choice == 'N' and self.player_coords[0] > 0:
 			self.player_coords[0] -= 1
@@ -69,14 +62,9 @@ class Player():
 		else:
 			print('Sorry, you\'ve hit a boundary and cannot proceed that way!\n')
 			return False
-		 
-		print('\n')
-		return True	
 
-def play_again(): 
-	msg = 'Do you want to move the player again? Y/N: '
-	choice = input(msg)
-	return choice.lower() == 'y'
+		print('\n')
+		return True
 
 player = Player()
 grid = Grid(player)
@@ -96,8 +84,9 @@ while game_active:
 
 	print("\033[H\033[J")	# clear the screen
 
-	if player.compute_move_coords(direction_choice) == True:
+	if player.compute_move_coords(direction_choice): #this IS the call to compute_move_coords !!
 		grid.update_grid()
+	
 	grid.print_grid()
 
 print('\nThanks for playing!')
