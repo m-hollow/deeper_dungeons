@@ -1,0 +1,12 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf500
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \'95 in alien_invasion, you tend to think of the settings.py module as a settings menu like in a PS4 game where the user can go in and change game settings\'85. but it\'92s not! \
+\
+\'95 it\'92s actually what you were thinking of as \'93backend\'94 content for the game to run. it contains values that will be changed incrementally as the game progressed, such as the speed of the aliens. don\'92t think of it as a \'93settings for user\'94 menu, think of it as \'93backend settings\'94 that is one global space to control game settings, that will be modified as the game progresses in order to do things like make the game more difficult, make the successive dungeon grids bigger, etc. \
+\
+\'95 so whenever a dungeon floor is completed, floor level gets incremented, difficulty gets incremented, so when the same create_grid function is called again and again (there\'92s only one grid creation function in the program, that is called to generate all the grids used in the game) the grid creation will access these \'91settings\'92 attributes in order to determine what kind of grid it\'92s going to make. since these settings will change as play progresses, the grid will be different each time its generated. }

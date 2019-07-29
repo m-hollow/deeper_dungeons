@@ -1,0 +1,1 @@
+You are in the first room of the dungeon. Be careful!XThis room appears to be empty.XThere is a MONSTER in this room!XThere is TREASURE in this room!XThere is a MYSTIC in this room!XThis room has the stairs to the next level of the dungeon!

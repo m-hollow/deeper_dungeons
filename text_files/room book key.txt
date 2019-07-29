@@ -1,0 +1,10 @@
+
+0 	Start
+1	Empty
+2	Monster
+3	it's a Monster
+4	Treasure
+5	it's Treasure
+6	it's an Item
+7	Exit
+8	Mystic
