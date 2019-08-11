@@ -65,11 +65,6 @@ class Armor():
 		print('TYPE{:.>14}'.format(self.name))
 		print('AC{:.>16}'.format(self.ac))
 
-class Potion():
-	"""instantiate a Potion object. will only exist as item in player attributes"""
-	def __init__(self, name):
-		self.name = name
-
 class Player():
 	def __init__(self):
 		self.name = 'Dashiel'
@@ -662,18 +657,6 @@ def gain_exp(player, monster):
 
 	#any gain of exp always prints a message about the gain...might need to decouple the two.
 	print('You gained {} experience points.'.format(exp))
-
-# other functions -- use potion can be done in battle or outside of it
-
-#def use_potion(player):
-	# print available potions
-
-	# confirm choice with user input
-
-	# update stats based on potion use
-
-	# exit function
-
 
 settings = Settings()
 player = Player()
