@@ -6,7 +6,7 @@ import time
 
 class Settings():
 	def __init__(self):
-		self.difficulty = 1
+		self.difficulty = 4
 
 class Dice():
 	def __init__(self):
@@ -69,11 +69,13 @@ class Player():
 
 	def choose_guard(self):
 
-		choice = get_player_input('What area will you guard? (HEAD/TORSO/LEGS)')
+
 		possible_choices = ['h','t','l', 'head', 'torso', 'legs']
 		active = True
 
 		while active:
+
+			choice = get_player_input('What area will you guard? (HEAD/TORSO/LEGS)')
 
 			if choice not in possible_choices:
 				print('You did not make a valid selection, try again.')
@@ -246,6 +248,7 @@ def slow_print_two(word_one, word_two):
 def slow_print_elipsis(word_one, word_two):
 	"""prints first word, step prints elipsis, prints second word"""
 	elipsis_long = '......'
+	#elipsis = '.' * 6
 
 	# print the first word
 	print(word_one, end='', flush=True)
@@ -312,65 +315,66 @@ def run_attempt(player, run_difficulty):
 	"""rolls player dice, prints out roll, returns True if roll beats run_dc, False otherwise"""
 	roll = player.dice.roll(20)
 	player.dice.print_roll()
-	return (roll > run_difficulty)		# returns a bool.
+	return (roll > run_difficulty)		# returns a bool
 
 def battle_main(player, monster):
 	"""the main battle function in which player fights monster"""
 
 	clear_screen()
 	battle_on = True
-	#player.choose_guard()
-
 	round_num = 1
+
+	# create an outer while loop to simply keep printing the updated header? possible?
+
+	# OR, make an update_battle_header() function that is called (multiple times? or just once?)
+	# in the main loop, and make sure (in the control flow) to clear the screen and call that update
+	# function each time. uhh, but what is it updating? all you need to do is re-print it....
 
 	while battle_on:
 
 		clear_screen()
-
-		
-		it_goes_on = True	# is this the best way to create branching paths inside a while loop?
-
+		# print battle header
+		# make this a function
 		print('* ROUND: {} \t{}\'s HP: {} \tENEMY HP: {} *\n'.format(round_num, player.name.upper(), player.hp, monster.hp))
 
 		if not monster.advantage:
-
 			if player_attack(player, monster, round_num):
 				player_damage(player, monster)
 
 		monster.advantage = False
-		player.choose_guard()
 		
+		# don't trigger monster attack if monster was already killed by player attack above
 		if monster.hp > 0:
+			player.choose_guard()	# player chooses defense position
 
 			if monster_attack(player, monster, round_num):
 				monster_damage(player, monster)
 
-		# check results to see if either player or monster is defeated
-
-		if player.hp <= 0:
-			print('{} has been defeated by the {}!'.format(player.name, monster.name))
+		# see if either player or monster has been defeated
+		if check_battle_status(player, monster):
 			battle_on = False
-			it_goes_on = False
-			press_enter()
 
-		if monster.hp <= 0:
-			print('You have destroyed the {}!'.format(monster.name))
-			gain_exp(player, monster)
-			battle_on = False
-			it_goes_on = False
-			press_enter()
-
-		# update objects, but only if battle will be continuing
-		if it_goes_on:
-			round_num += 1
+		if battle_on:			#reusing the same check that runs the loop itself, to create a branch.
 			monster.update_monster()
-			#player.choose_guard()
 
-	# press_enter()
 	print('\nThe battle is over! Thanks for playing!')
+
+def check_battle_status(player, monster):
+	"""checks state of player and monster to determine if battle is over, or should continue"""
+	
+	#check player
+	if player.hp <= 0:
+		print('{} has been defeated by the {}!'.format(player.name, monster.name))
+		return True
+	elif monster.hp <= 0:
+		print('You have destroyed the {}!'.format(monster.name))
+		return True
+	else:
+		return False
 
 def player_attack(player, monster, round_num):
 
+	print('CHEAT: {} is currently guarding {}'.format(monster.name, monster.guarded_area))
 	command = get_player_input('Where will you aim your attack?? (HEAD/TORSO/LEGS)'.format(round_num))
 
 	if command == monster.guarded_area:
@@ -378,8 +382,8 @@ def player_attack(player, monster, round_num):
 		press_enter()
 		return False
 	else:
-		print('Press enter to roll your attack dice')
-		press_enter()
+		#print('Press enter to roll your attack dice')
+		#press_enter()
 
 		roll = player.dice.roll(20)
 
@@ -409,26 +413,20 @@ def player_damage(player, monster):
 def monster_attack(player, monster, round_num):
 
 	msg_one = 'The monster is attacking your'
-	guarded = ''
+	msg_two = ''
 	attack = ''
-
-	if player.guarding == 'h':
-		guarded = 'HEAD'
-	if player.guarding == 't':
-		guarded = 'TORSO'
-	if player.guarding == 'l':
-		guarded = 'LEGS'
-
-	msg_two = guarded
 
 	monster_aim = randint(1, 3)
 
 	if monster_aim == 1:
 		attack = 'h'
+		msg_two = 'HEAD'
 	if monster_aim == 2:
 		attack = 't'
+		msg_two = 'TORSO'
 	if monster_aim == 3:
 		attack = 'l'
+		msg_two = 'LEGS'
 
 	slow_print_elipsis(msg_one, msg_two)
 
@@ -464,7 +462,6 @@ def monster_damage(player, monster):
 
 	press_enter()
 
-
 def gain_exp(player, monster):
 	"""award experience to player for beating a monster"""
 
@@ -472,7 +469,7 @@ def gain_exp(player, monster):
 	player.exp += exp
 	#any gain of exp always prints a message about the gain...might need to decouple the two.
 	print('You gained {} experience points!'.format(exp))
-	press_enter()
+	#press_enter()
 
 
 settings = Settings()

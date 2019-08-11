@@ -2,29 +2,32 @@ from random import randint
 from random import choice
 import time
 
-# object definitions
+# object definitions - put these in a module! 
 
 class Settings():
 	def __init__(self):
-		self.difficulty = 1
+		self.difficulty = 2
 
 class Dice():
 	def __init__(self):
 		self.last_roll = None
-		self.mod_val = 0
-		self.current_mod = None
+		#self.mod_val = 0
+		#self.current_mod = None
 
 	def roll(self, sides=6):
 		roll = randint(1, sides)
 		self.last_roll = roll
 		return roll
 
-	def print_roll(self):
+	def print_roll(self, mods=0):
 		text = 'ROLLING...'
 		for c in text:
 			print(c, end='', flush=True)
-			time.sleep(0.06)
-		print(' {}'.format(self.last_roll))
+			time.sleep(0.06)	
+		print(' {}'.format(self.last_roll)) # use lambda here to put 'if mods' inside line?
+
+		if mods > 0:
+			print(' +{}'.format(mods)) # or just print mods as totally separate function?
 
 class Weapon():
 	"""this class will only be instantiated as an attribute of the player class"""
@@ -46,11 +49,11 @@ class Armor():
 	"""only instantiated as an attribute of player class"""
 	def __init__(self, name, armor_class):
 		self.name = name
-		self.ac = armor_class
+		self.armor_class = armor_class
 
 	def modify_armor(self, add_to_ac):
 		self.name += 'x1'
-		self.ac += add_to_ac
+		self.armor_class += add_to_ac
 
 	def print_stats(self):
 		print('*** ARMOR INFO ***')
@@ -59,56 +62,34 @@ class Armor():
 
 class Player():
 	def __init__(self):
-		self.name = 'Hero'
+		self.name = 'Max'
 		self.hp = 10
 		self.dice = Dice()
 		self.armor = Armor('Leather', 10)
 		self.exp = 0
 		self.weapon = Weapon('Dagger', 4)
-		self.guarding = 'h'
-
-	def choose_guard(self):
-
-		choice = get_player_input('What area will you guard? (HEAD/TORSO/LEGS)')
-		possible_choices = ['h','t','l', 'head', 'torso', 'legs']
-		active = True
-
-		while active:
-
-			if choice not in possible_choices:
-				print('You did not make a valid selection, try again.')
-			else:
-				if choice.startswith('h'):
-					self.guarding = 'h'
-				elif choice.startswith('t'):
-					self.guarding = 't'
-				elif choice.startswith('l'):
-					self.guarding = 'l'
-
-				active = False
+		self.dead = False
 
 class Monster():
 	"""Generate a monster object for battle sequences, diff parameter determines difficulty"""
 
 	def __init__(self, difficulty):
-		self.difficulty = difficulty #add randomization of difficulty here
-		self.d_string = self.get_d_string()
+		self.difficulty = difficulty # add some randomization of difficulty here
+		self.diff_string = self.get_diff_string()
 		
 		self.dice = Dice()	# constructs a die object by calling Dice class
 
 		self.advantage = False	# determines who gets first attack, player or monster
 
 		self.damage_roll = self.get_damage_roll()
+		self.armor_class = self.get_armor_class()
 
 		self.name = self.get_monster_name()	# gets random name on construction
-		self.hp = self.get_hit_points()				# gets HP depending on difficulty
-		self.guarded_area = self.choose_guard()
-		self.ac = self.get_armor_class()
-
-
+		self.hp = self.get_hit_points()		# gets HP depending on difficulty
+		
 	def get_armor_class(self):
 		if self.difficulty == 1:
-			return 8
+			return 7
 		if self.difficulty == 2:
 			return 11
 		if self.difficulty == 3:
@@ -116,19 +97,7 @@ class Monster():
 		if self.difficulty == 4:
 			return 16
 
-	def choose_guard(self):
-		"""called to determine where enemy is currently guarding"""
-
-		g = randint(1, 3)
-
-		if g == 1:
-			return 'h'
-		if g == 2:
-			return 't'
-		if g == 3:
-			return 'l'
-
-	def get_d_string(self):
+	def get_diff_string(self):
 		"""gets appropriate string based on difficult level int"""
 		if self.difficulty == 1:
 			return 'EASY'
@@ -191,7 +160,7 @@ class Monster():
 	def print_stats(self):
 		print('# MONSTER STATS       #')     #23 chars
 		print('NAME:{:.>18}'.format(self.monster_name.upper()))
-		print('DIFF LEVEL:{:.>12}'.format(self.d_string))
+		print('DIFF LEVEL:{:.>12}'.format(self.diff_string))
 		print('HP:{:.>20}'.format(self.hp))
 		print('AC:{:.>20}'.format(self.ac))
 		print()
@@ -207,16 +176,10 @@ class Monster():
 		if self.difficulty > 3:
 			return 10
 
-	def update_monster(self):
-		"""Each round of the battle, the monster guards one or more part of its body"""
-
-		# if nothing else gets added to this (no other changes to update) you could delete
-		# this function and simply call self.choose_guard() in its place
-		self.guarded_area = self.choose_guard()
-
-# function definitions - basic UI stuff
+# function definitions - basic UI stuff - put these all in a module!
 
 def press_enter(text=None):
+	"""input is not assigned to anything, this is only to have enter pressed by user"""
 	if text:
 		print(text)
 	msg = '...'
@@ -225,9 +188,44 @@ def press_enter(text=None):
 def get_player_input(text=None):
 	if text:
 		print(text)
-	msg = '\n> '
-	player_input = input(msg)
-	return player_input
+	command = input('\n> ')
+	return command
+
+def get_input_valid(text=None, key='standard'):
+	"""a version of input function that also performs input validation"""
+	# always put key=... in a call to this function
+
+	if text:
+		print(text)
+
+	possible_choices = get_possible_choices(key)
+	
+	valid = False
+
+	while not valid:
+
+		command = input('\n> ')
+
+		if command not in possible_choices:
+			print('You did not enter a valid command, try again.')
+		else:
+			valid = True
+
+	return command
+
+def get_possible_choices(key):
+
+	#possible_choices = []
+
+	if key == 'standard':
+		possible_choices = ['n','s','e','w','i','b','c','d','q']
+	elif key == 'battle':
+		possible_choices = ['strike head', 'strike torso', 'strike legs', 'use potion', 'p', 'c']
+		possible_choices += ['h','t','l','i', 's h', 's t', 's l', 's']
+
+	# add more as needed here
+
+	return possible_choices
 
 def clear_screen():
 	"""simple command to clear the game screen"""
@@ -246,6 +244,7 @@ def slow_print_two(word_one, word_two):
 def slow_print_elipsis(word_one, word_two):
 	"""prints first word, step prints elipsis, prints second word"""
 	elipsis_long = '......'
+	#elipsis = '.' * 6
 
 	# print the first word
 	print(word_one, end='', flush=True)
@@ -258,7 +257,7 @@ def slow_print_elipsis(word_one, word_two):
 	# print the second word
 	print(word_two, flush=True)
 
-# function definitions - gameplay
+# battle-specific function definitions
 
 def encounter_monster(player, monster):
 	"""monster is engaged and decision to fight or run is chosen by player"""
@@ -268,10 +267,7 @@ def encounter_monster(player, monster):
 	run_difficulty = int(randint(2,10) + (3 * monster.difficulty))
 
 	active = True
-	run_failed = False		# used for proper control flow in while loop, because
-							# f = fight, r = maybe fight, maybe no fight. we need a flag
-							# so we know which to proceed into. this variable is that flag.
-
+	
 	# step print encounter text	
 	slow_print_elipsis('You have encountered a', monster.name.upper())
 
@@ -289,21 +285,19 @@ def encounter_monster(player, monster):
 			# this if has no else case
 			if command.lower().startswith('r'):
 				if run_attempt(player, run_difficulty):
-					# run was successful, exit while loop and do not start battle (run_failed remains false)
+					# run was successful, exit while loop and do not start battle.
 					active = False
 					print('You successfully run away from the {}!'.format(monster.name))
 					press_enter()
 
 				else:
-					# run failed, switch run_failed flag so battle will start; 
-					run_failed = True
 					# will be used to have monster attack first
 					monster.advantage = True
 					print('You failed to run away from the {}!'.format(monster.name))
 					print('Now you must fight!')
 					press_enter()
 
-			if command.lower().startswith('f') or run_failed == True:
+			if command.lower().startswith('f') or active:
 				# end the encounter loop and start the battle
 				active = False
 				battle_main(player, monster)
@@ -312,145 +306,182 @@ def run_attempt(player, run_difficulty):
 	"""rolls player dice, prints out roll, returns True if roll beats run_dc, False otherwise"""
 	roll = player.dice.roll(20)
 	player.dice.print_roll()
-	return (roll > run_difficulty)		# returns a bool.
+	return (roll > run_difficulty)		# returns a bool
 
 def battle_main(player, monster):
-	"""the main battle function in which player fights monster"""
-
-	clear_screen()
-	battle_on = True
-	#player.choose_guard()
 
 	round_num = 1
+	fight_mods = {'enemy_armor': 0, 'player_damage': 0} # should be an attribute of player!?
 
-	while battle_on:
+	crits = {'crit': False}
 
-		clear_screen()
+	active = True
 
-		
-		it_goes_on = True	# is this the best way to create branching paths inside a while loop?
+	# main event loop for player and monster attacks, goes until fight is ended.
+	while active:
 
-		print('* ROUND: {} \t{}\'s HP: {} \tENEMY HP: {} *\n'.format(round_num, player.name.upper(), player.hp, monster.hp))
+		# clears screen and prints battle header
+		battle_header(player, monster, round_num)
 
 		if not monster.advantage:
-
-			if player_attack(player, monster, round_num):
-				player_damage(player, monster)
-
+			if player_attack(player, monster, fight_mods, round_num, crits):
+				if not crits['crit']:
+					player_damage(player, monster, fight_mods)
+					press_enter()		# only one that I need of this function ??
+			
 		monster.advantage = False
-		player.choose_guard()
-		
+
+		# remember, this will clear any commands previously printed to the screen as well
+		# as re-print the header!
+		battle_header(player, monster, round_num) # second call, so monster HP updates on screen.
+
 		if monster.hp > 0:
-
-			if monster_attack(player, monster, round_num):
+			if monster_attack(player, monster):
 				monster_damage(player, monster)
+			
+		if check_battle_status(player, monster):
+			active = False
 
-		# check results to see if either player or monster is defeated
-
-		if player.hp <= 0:
-			print('{} has been defeated by the {}!'.format(player.name, monster.name))
-			battle_on = False
-			it_goes_on = False
+		if active:
 			press_enter()
-
-		if monster.hp <= 0:
-			print('You have destroyed the {}!'.format(monster.name))
-			gain_exp(player, monster)
-			battle_on = False
-			it_goes_on = False
-			press_enter()
-
-		# update objects, but only if battle will be continuing
-		if it_goes_on:
 			round_num += 1
-			monster.update_monster()
-			#player.choose_guard()
+			crits['crit'] = False
 
-	# press_enter()
+			#reset the fight_mods
+			fight_mods['enemy_armor'] = 0
+			fight_mods['player_damage'] = 0
+
 	print('\nThe battle is over! Thanks for playing!')
 
-def player_attack(player, monster, round_num):
+def print_battle_commands():
+	"""print a screen showing all possible commands in battle"""
+	clear_screen()
 
-	command = get_player_input('Where will you aim your attack?? (HEAD/TORSO/LEGS)'.format(round_num))
+	print('**** BATTLE COMMANDS ****') # 25 characters used
+	print()
+	print('Strike...............HEAD')
+	print('                    TORSO')
+	print('             	    LEGS')
+	print()
+	print('Use................POTION')
+	print('                     ITEM')
+	print()
 
-	if command == monster.guarded_area:
-		print('The {} immediately deflected your attack!'.format(monster.name))
-		press_enter()
-		return False
+	press_enter()
+
+def battle_header(player, monster, round_num):
+	clear_screen()
+	print('ROUND: {}'.format(round_num))
+	print('{} HP: {} \t WEP: {}'.format(player.name.upper(), player.hp, player.weapon.name))
+	print('{} HP: {}'.format(monster.name.upper(), monster.hp))
+	print()
+
+def check_battle_status(player, monster):
+	"""checks state of player and monster to determine if battle is over, or should continue"""
+	
+	#check player
+	if player.hp <= 0:
+		print('\nYou have been defeated by the {}!'.format(monster.name))
+		player.dead = True
+		return True
+
+	elif monster.hp <= 0:
+		print('\nYou have destroyed the {}!'.format(monster.name))
+
+		gain_exp(player, monster)
+
+		return True
+	
 	else:
-		print('Press enter to roll your attack dice')
-		press_enter()
+		# neither player nor monster has been defeated, fight will continue.
+		return False
 
-		roll = player.dice.roll(20)
+def player_attack(player, monster, fight_mods, round_num, crits):
 
-		player.dice.print_roll()
+	active = True
 
-		if roll > monster.ac:
+	# some possible menu commands need to loop back to command input (command, potion)
+	# loops until a non-looping command is given
+	while active:
 
-			print('You successfully hit the {} with your {}!'.format(monster.name, player.weapon.name))
-			return True
+		battle_header(player, monster, round_num)		# called again here because menu calls will clear screen (command, potion)
 
+		print('Choose your attack...')
+
+		command = get_input_valid(text=None, key='battle')
+
+		if command == 'c':
+			print_battle_commands()
+		elif command == 'p':
+			print('This is how you will use a potion, eventually.')
+			press_enter()
+		elif command == 'i':
+			print('This would show player inventory.')
+			press_enter()
+		elif command == 'b':
+			print('And this would show player bio....')
+			press_enter()
 		else:
-			print('Your attack missed the {}, dang!'.format(monster.name))
-			return False
+			active = False
 
-def player_damage(player, monster):
+	# out of loop, perform actual battle attacks
 
-	damage = player.dice.roll(player.weapon.damage)
+	# IMPLEMENT FUNCTION FOR CHOOSING STRIKE AREA HERE (BUILD AS SEPERATE FUNCTION, CALL HERE)
 
+	roll = player.dice.roll(20)
 	player.dice.print_roll()
+
+	if roll == 20:
+		print('CRITICAL HIT!')
+		print('The {} has been destroyed by your perfectly placed strike!'.format(monster.name))
+		monster.hp = 0
+		crits['crit'] = True # used as flag to skip damage roll after critical hit
+		return True
+
+	elif roll > monster.armor_class + fight_mods['enemy_armor']:
+		print('You successfully hit the {} with your {}!'.format(monster.name, player.weapon.name))
+		return True
+
+	else:
+		print('Your attacked missed the {}, dang!'.format(monster.name))
+		return False
+
+def player_damage(player, monster, fight_mods):
+
+	damage = player.dice.roll(player.weapon.damage) + fight_mods['player_damage']
+
+	player.dice.print_roll(fight_mods['player_damage'])
 
 	print('You dealt {} points of damage to the {}'.format(damage, monster.name))
 
 	monster.hp -= damage
 
-	press_enter()
+	# this is here simply so the header doesn't show a negative number for monster hp
+	# after monster is defeated.
+	if monster.hp < 0:
+		monster.hp = 0
+		
+def monster_attack(player, monster):
 
-def monster_attack(player, monster, round_num):
+	print('The {} is attacking you!'.format(monster.name))
 
-	msg_one = 'The monster is attacking your'
-	guarded = ''
-	attack = ''
+	# time.sleep() here ?
 
-	if player.guarding == 'h':
-		guarded = 'HEAD'
-	if player.guarding == 't':
-		guarded = 'TORSO'
-	if player.guarding == 'l':
-		guarded = 'LEGS'
+	roll = monster.dice.roll(20)
+	monster.dice.print_roll()
 
-	msg_two = guarded
+	if roll == 20:
+		print('CRITICAL HIT, OUCH!')
+		print('Automatic 5 points of damage, plus normal damage roll.')
+		player.hp -= 5
+		return True
 
-	monster_aim = randint(1, 3)
-
-	if monster_aim == 1:
-		attack = 'h'
-	if monster_aim == 2:
-		attack = 't'
-	if monster_aim == 3:
-		attack = 'l'
-
-	slow_print_elipsis(msg_one, msg_two)
-
-	if attack == player.guarding:
-		print('You immediately deflect the {}\'s attack!'.format(monster.name))
-		press_enter()
-		return False
-
+	if roll > player.armor.armor_class:
+		print('The {}\'s attack hits you!'.format(monster.name))
+		return True
 	else:
-		press_enter()
-
-		roll = monster.dice.roll(20)
-		monster.dice.print_roll()
-
-		if roll > player.armor.ac:
-			print('The {}\'s attack hits you!'.format(monster.name))
-			press_enter()
-			return True
-		else:
-			print('The {}\'s attack misses you, phew!'.format(monster.name))
-			press_enter()
-			return False
+		print('The {}\'s attack misses you, phew!'.format(monster.name))
+		return False
 
 def monster_damage(player, monster):
 
@@ -462,17 +493,15 @@ def monster_damage(player, monster):
 
 	player.hp -= damage
 
-	press_enter()
-
-
 def gain_exp(player, monster):
 	"""award experience to player for beating a monster"""
 
 	exp = monster.difficulty * 10
 	player.exp += exp
+
 	#any gain of exp always prints a message about the gain...might need to decouple the two.
 	print('You gained {} experience points!'.format(exp))
-	press_enter()
+
 
 
 settings = Settings()
