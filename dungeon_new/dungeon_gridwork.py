@@ -1,17 +1,15 @@
 import time
-from random import randint
-from random import choice
+from random import randint, choice
 import copy
 
 # define game objects
 
 class GameSettings():
 	"""Define game settings"""
-
 	def __init__(self):
 		self.grid_size = 5
 		self.starting_gold = 10
-		self.difficulty = 3
+		self.difficulty = 1
 
 	def user_settings_change(self):
 
@@ -21,19 +19,39 @@ class GameSettings():
 
 		self.grid_size = size_choice
 
+	def reset_settings(self):
+		"""called when player dies or active game is quit"""
+		self.grid_size = 5
+		self.starting_gold = 10
+		self.difficulty = 1
+
+	def print_settings(self):
+		"""dev feature to confirm if settings are getting udpated"""
+		clear_screen()
+		print('Grid Size: {}'.format(self.grid_size))
+		print('Difficulty: {}'.format(self.difficulty))
+
+		press_enter()
+
 class GameGrid():
 	"""Creates a grid object for the game of variable size"""
+
+	# floor_level = 0
+
 	def __init__(self, settings, player):
+
+		# self.__class__.floor_level += 1	# currently this isn't working at all. updating at unexpected times.
 		
 		self.settings = settings
 		self.player = player
 
-		self.row = self.settings.grid_size
+		self.row = self.settings.grid_size		# grid size based on current settings
 		self.col = self.settings.grid_size
 
 		# question: should floor_level be stored in settings?
-		self.floor_level = 1 # objects constructed as levels advance will increase this number
-							 # perhaps that means I should use a __class__ attribute here? 
+		self.floor_level = 1		#original use of floor level before class attribute above
+		self.floor_exited = False
+		self.merchant_closed = False
 
 		self.grid_matrix = self.make_grid()			# grid for graphics, containing strings '*'
 		self.all_room_grid = self.generate_rooms()  # grid for room data, containing room dictionaries
@@ -56,7 +74,7 @@ class GameGrid():
 		return grid_matrix
 
 	def update_player_location(self):
-		"""updates the grid_matrix to show the X for the player coordinates (and change prev room back to a *"""
+		"""updates the grid_matrix to show the X for the player coordinates (and change prev room back to a *)"""
 
 		self.grid_matrix[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' * '
 		self.grid_matrix[self.player.player_location[0]][self.player.player_location[1]] = ' X '
@@ -68,8 +86,16 @@ class GameGrid():
 		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type']
 		self.room_status = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Visited']
 
+		# remember, all_room_grid is a list containing multiple lists, and each of THOSE lists contains a bunch of
+		# dictionaries (the room dictionaries, with keys for Type and Visited, etc).
+		# the above code indexes the all_room_grid with format [][][]
+		# first [] - index list inside the main list, e.g. which list do we want inside the main list?
+		# second [] - index that list, e.g. which dictionary do we want inside the list we've chosen?
+		# third [] - index the dictionary by key, giving us the value stored for that key.
+
 	def generate_rooms(self):
 		"""create a room that corresponds to each coordinate in the grid matrix object"""
+
 		all_room_grid = []	# will become a matrix (a list of lists) containing room dictionaries
 		
 		for r in self.grid_matrix:		# r is a list
@@ -230,7 +256,7 @@ class Weapon():
 		print('DAMAGE{:.>13}'.format(self.damage))
 
 	def get_dam_icon(self):
-		return '1d' + str(self.damage)
+		return '(1d' + str(self.damage) + ')'
 
 class Armor():
 	"""only instantiated as an attribute of player class"""
@@ -254,21 +280,27 @@ class Player():
 		self.settings = settings
 
 		self.created = False
-		self.info = {'Name':'None', 'Race':''}
+		self.dead = False
 
-		#self.stats = {'LEVEL': 1, 'HP': 10, 'GOLD':self.settings.starting_gold, 'EXP': 0}
+		self.info = {'Name':'None', 'Race':''}
 
 		# starting values for player game attributes
 		self.name = self.info['Name']
 		self.level = 1
-		self.hp = 10
+		self.hp = 10		# current in game hp amount
+		self.max_hp = 10	# current max hp for player level
 		self.gold = 10
-		self.exp = 0
+		self.exp = 0	# set on creation of player object
+		self.next_level_at = self.get_level_up_val()  # determined on creation of player object
+
+		# checks will need to be done in game loop to see if player's current exp is > than level_up, and if so,
+		# we need to call a level up function AND ALSO call a function to increase 'level_up' attribute to next
+		# setting (so next level-up occurs at higher exp amount, etc).
 
 		self.dice = Dice()
 
 		# player items
-		self.potions = []
+		self.elixirs = []
 		self.items = ['Torch',]
 		self.weapon = Weapon('Dagger', 4)
 		self.armor = Armor('Leather', 10)
@@ -277,9 +309,17 @@ class Player():
 		self.player_location = [(self.settings.grid_size - 1), (int(self.settings.grid_size / 2) - 1)]
 		self.previous_coords = [0,0]
 
+	def get_level_up_val(self):
+		if self.level == 1:
+			return 100
+		if self.level == 2:
+			return 220
+		if self.level == 3:
+			return 350
+		if self.level > 3:
+			return (2 * self.exp)	# think through / clarify this math here. can you use it throughout?
+
 	def build_player(self):
-		"""fill dictionary with user character choices"""
-		
 		clear_screen()
 
 		a = input('What is the name of your character? ')
@@ -301,12 +341,13 @@ class Player():
 		clear_screen()
 
 		print("#    PLAYER INFO    #\n")
-		print("Name{:.>17} ".format(self.info['Name']))
+		print("Name{:.>17} ".format(self.info['Name']))		# FYI: the space after the {} appears to make no difference..?
 		print("Race{:.>17} ".format(self.info['Race']))
 		print("Level{:.>16} ".format(self.level))
 		print("Hit Points{:.>11} ".format(self.hp))
 		print("Gold Pieces{:.>10} ".format(self.gold))
 		print("Experience{:.>11} ".format(self.exp))
+		print("Next Level{:.>11} ".format(self.next_level_at))
 
 		press_enter()
 
@@ -316,18 +357,20 @@ class Player():
 
 		# you have this redundant usage of player items. You could just access weapon
 		# and armor info directly from the objects themselves, but instead you're doing 'inventory'.
-		print("#     INVENTORY     #\n")
-		print("Weapon{:.>15} ".format(self.weapon.name + ' ' + '(self.weapon.icon)'))
-		print("Armor{:.>16} ".format(self.armor.name))
-		print("Items{:.>16} ".format(self.items[0])) # how to show all list items here ?
+		print("#      INVENTORY      #\n")   #23 spaces used here
+		print("Weapon{:.>17}".format(self.weapon.name + self.weapon.icon))
+		print("Armor{:.>18}".format(self.armor.name))
+		print("Items{:.>18}".format(self.items[0])) # how to show all list items here ?
 		print()
-		print("#      POTIONS      #\n")
+		print("#       POTIONS       #\n")
 		
-		count = 1
-		for potion in self.potions:
-			print('#{}  {}'.format(count, potion))
-			count += 1
-
+		if self.elixirs:
+			count = 1
+			for elixir in self.elixirs:
+				print('{}{:.>22} '.format(count, elixir['Type'].title()))
+				count += 1
+			print()
+		
 		press_enter()
 
 	def reset_player(self):
@@ -338,12 +381,16 @@ class Player():
 
 		self.level = 1
 		self.hp = 10
+		self.max_hp = 10
 		self.gold = 10
 		self.exp = 0
+		self.next_level_at = self.get_level_up_val()
 
-		self.potions = []
+		self.elixirs = []
 		self.weapon = Weapon('Dagger', 4)
 		self.armor = Armor('Leather', 10)
+
+		self.dead = False
 
 class Monster():
 	"""Generate a monster object for battle sequences, diff parameter determines difficulty"""
@@ -439,6 +486,7 @@ class Monster():
 		print('HP:{:.>20}'.format(self.hp))
 		print('AC:{:.>20}'.format(self.ac))
 		print()
+		press_enter()
 
 	def get_damage_roll(self):
 		"""determine damage roll of monster via difficulty level"""
@@ -456,7 +504,8 @@ class GameLog():
 	def __init__(self, player, grid):
 		self.player = player
 		self.grid = grid
-		self.room_book = RoomBook()
+		self.room_book = self.make_room_book()
+		self.room_book_visited = self.make_room_book_visited()
 		self.current_room = 'None'   # used only to print room type in game header
 		self.current_message = 'None'
 	
@@ -468,29 +517,40 @@ class GameLog():
 	def get_current_message(self):
 		"""looks at grid object to determine and return appropriate log entry"""
 
-
 		# this is where you use the room_status attribute bool, you COULD simply check the all_room_grid bool 
 		# 'Visited' here instead, it's the same info. You just thought having this extra var was cleaner.
 
 		if self.grid.room_status == False and self.grid.current_room_type != 'Exit':
 
 			if self.grid.current_room_type == 'Start':
-				self.current_message = self.room_book.room_dict['Start']
+				self.current_message = self.room_book['Start']
 			elif self.grid.current_room_type == 'Empty':
-				self.current_message = self.room_book.room_dict['Empty']
+				self.current_message = self.room_book['Empty']
 			elif self.grid.current_room_type == 'Monster':
-				self.current_message = self.room_book.room_dict['Monster']
+				self.current_message = self.room_book['Monster']
 			elif self.grid.current_room_type == 'Treasure':
-				self.current_message = self.room_book.room_dict['Treasure']
+				self.current_message = self.room_book['Treasure']
 			elif self.grid.current_room_type == 'Mystic':
-				self.current_message = self.room_book.room_dict['Mystic']
+				self.current_message = self.room_book['Mystic']
+
+		# do you really need to separate the exit text like this? You can show a 'visited' text for the Exit room,
+		# the important thing is that the Exit event still gets triggered regardless of which room_book text is shown!
 
 		elif self.grid.current_room_type == 'Exit':		# doesn't matter if Visited is True or False, Exit always presents the same.
-				self.current_message = self.room_book.room_dict['Exit']
+				self.current_message = self.room_book['Exit']
 
-		# room_status = True, room has already been visited.
+		# room_status = True, room has already been visited: use the visited dictionary of texts.
 		else:
-			self.current_message = 'This place seems familiar. Yes...You\'ve been here before!'
+			if self.grid.current_room_type == 'Start':
+				self.current_message = self.room_book_visited['Start']
+			elif self.grid.current_room_type == 'Empty':
+				self.current_message = self.room_book_visited['Empty']
+			elif self.grid.current_room_type == 'Monster':
+				self.current_message = self.room_book_visited['Monster']
+			elif self.grid.current_room_type == 'Treasure':
+				self.current_message = self.room_book_visited['Treasure']
+			elif self.grid.current_room_type == 'Mystic':
+				self.current_message = self.room_book_visited['Mystic']
 
 		return self.current_message	
 
@@ -505,33 +565,43 @@ class GameLog():
 		self.grid.print_grid()
 
 		# game log
-		
 		print(self.current_message)
 
+	def make_room_book(self):
+		"""assign a dictionary of room text to room_book attribute"""
 
-		# print('{}\'s LOG:\n{}'.format(self.player.info['Name'].upper(), self.current_message))
-	
-class RoomBook():
-	"""loads room text and builds dictionary of all separated entries"""
-	def __init__(self):
-		self.all_entries = self.load_entries()
-
-		self.room_dict = {
-		'Start':self.all_entries[0],
-		'Empty':self.all_entries[1],
-		'Monster':self.all_entries[2],
-		'Treasure':self.all_entries[3],
-		'Mystic':self.all_entries[4],
-		'Exit':self.all_entries[5],
-		}
-
-	def load_entries(self):
-		"""loads the text file with all entries and splits it into a list"""
 		filename = 'text_files/room_book.txt'
 		with open(filename, encoding='utf-8') as file_object:
 			room_text = file_object.read().split('X')
 
-		return room_text
+		room_dict = {
+		'Start':room_text[0],
+		'Empty':room_text[1],
+		'Monster':room_text[2],
+		'Treasure':room_text[3],
+		'Mystic':room_text[4],
+		'Exit':room_text[5],
+		}
+
+		return room_dict
+
+	def make_room_book_visited(self):
+		"""make the dictionary object of room text for already visited rooms"""
+
+		filename = 'text_files/room_book_visited.txt'
+		with open(filename, encoding='utf-8') as file_object:
+			room_text_b = file_object.read().split('X')
+
+		room_dict_b = {
+		'Start':room_text_b[0],
+		'Empty':room_text_b[1],
+		'Monster':room_text_b[2],
+		'Treasure':room_text_b[3],
+		'Mystic':room_text_b[4],
+		'Exit':room_text_b[5],
+		}
+
+		return room_dict_b
 
 class MainMenu():
 	"""Display menu and receive input for user choice"""
@@ -566,16 +636,17 @@ class MainMenu():
 # define game UI functions.
 
 def you_are_dead(player, text=''):
+
+	clear_screen()
+
 	if text:
 		print(text)
 
-	print('YOU', end='', flush=True)
-	time.sleep(0.5)
-	print('\tARE', end='', flush=True)
-	time.sleep(0.5)
-	print('\tDEAD.', end='', flush=True)
-
-	print('So passes {} the {} into the endless night.'.format(player.info['Name'], player.info['Race']))
+	step_printer('YOU ARE DEAD')
+	
+	time.sleep(0.8)
+	print()
+	print('\nSo passes {} the {} into the endless night.'.format(player.info['Name'], player.info['Race']))
 
 	press_enter()
 
@@ -653,7 +724,9 @@ def main_menu(player):
 								# therefore has no other action to perform, so it (run_game body loop) loops, calling 
 								# this function again. 
 
-def get_player_input():
+def get_player_input(text=None):
+	if text:
+		print(text)
 	msg = '\n> '
 	player_input = input(msg)
 	return player_input
@@ -674,7 +747,8 @@ def get_input_valid(text=None, key='standard'):
 
 	while not valid:
 
-		command = input('\n> ')
+		command = input('\n> ').lower()		# this function always takes lower() right here,
+											# so there's no need to call lower() elsewhere.
 
 		if command not in possible_choices:
 			print('You did not enter a valid command, try again.')
@@ -690,18 +764,19 @@ def get_possible_choices(key):
 	if key == 'standard':
 		possible_choices = ['n','s','e','w','i','b','c','d','q']
 	elif key == 'battle':
-		possible_choices = ['attack','standard','headshot','s','h','c','p','i','b']
-		possible_choices += ['finesse','fin','flurry','flu']
-
-		# you need to add the menu options for battle mode: commands, potions, items, etc.
-
-
-		# think of it like this: this place is the 'master set' of valid commands.
-		# inside the actual game functions, you will parse the inputs to perform the
-		# corresponding actions, *always knowing that a valid command has already been 
-		# entered*.
+		possible_choices = ['strike','headshot','s','h','p','i','b']
+		possible_choices += ['finesse','fin','flurry','flu', 'help']
+	elif key == 'exit_room':
+		possible_choices = ['yes','no','y','n']
 
 	# add more as needed here
+
+	# think of it like this: this place is the 'master set' of valid commands.
+	# inside the actual game functions, you will parse the inputs to perform the
+	# corresponding actions, *always knowing that a valid command has already been 
+	# entered*.
+
+	
 
 	return possible_choices
 
@@ -725,7 +800,7 @@ def action_menu(game_log):
 							# if you want to create loops that keep header active, you'll either need to figure out
 							# how and where to move this, or call it more than once.
 	
-	possible_choices = ['c', 'n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd']
+	possible_choices = ['c', 'n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'settings']
 	
 	command = get_player_input().lower()
 
@@ -779,15 +854,88 @@ def game_action(settings, player, grid, game_log, dice):
 			"""show player the available game commands they can use"""
 			command_menu(player)
 
+		elif command == 'settings':
+			"""show the current settings; this is purely for dev purposes"""
+			settings.print_settings()
+
 		elif command == 'q':
-			print('Returning to Main Menu...') #this won't be seen unless you add a press_enter() all after it
+			print('Returning to Main Menu...')
+			time.sleep(0.08)
 			player.reset_player()	#reset player so new game starts fresh, attributes back to initials
-			#reset_grid()	# I think this is not needed; grid is constructed when menu action 2 is chosen, so will be new...
-			#reset_log()	# should be same as grid, object is constructed when action 2 is chosen.
+			settings.reset_settings()
+
+			#reset_grid()	# unnecessary; grid is constructed when menu action 2 is chosen, so will be new every time.
+			#reset_log()	# same as grid
 			active = False
 
 		else:
 			pass
+
+		if active: # we don't want to call check_player_status if user chose 'q' to quit above, so we do a check on active.
+			if check_player_status(settings, player): 	# if True, player is dead, end action event loop.
+				active = False
+				player.reset_player() # needs to be reset for new game start
+				settings.reset_settings()
+			
+			if grid.floor_exited:	# flag for player finding exit and choosing to use it during this turn (in exit event)
+				make_next_floor(settings, player, grid, game_log)
+		
+def make_next_floor(settings, player, grid, game_log): # should this be a method of GameGrid class ?
+	"""updates gamestate to update settings and generate new grid and log"""
+	
+	# update settings
+	settings.difficulty += 1	
+	settings.grid_size += 2
+	
+	# this is the part that doesn't work. 
+	# I know I can just update the grid object instead of making a new one, but what if I want to make a new one?
+	# how do we then USE the new one?
+
+	grid = GameGrid(settings, player)	
+	game_log = GameLog(player, grid)	
+
+	#update player location 
+	player.player_location = [(settings.grid_size - 1), (int(settings.grid_size / 2) - 1)]
+	player.previous_coords = [0,0]
+	
+def check_player_status(settings, player): # seems we don't actually need settings ? 
+	"""check in every pass of game action event loop to see if player status has changed in a way that triggers event"""
+
+	# check if player is alive
+	if player.hp <= 0:
+		player.dead = True
+		
+		#print('\nOh damn! Looks like {} has been defeated!'.format(player.info['Name']))
+		#time.sleep(0.6)
+		you_are_dead(player)
+
+		return True
+
+	# check if player has levelled up... surely this needs to be its own function, and probably a method of
+	# the player class...
+
+	if not player.dead:
+		player_level_check(settings, player)
+		
+	return False
+
+def player_level_check(settings, player):
+	"""checks if player can level up at end of each turn, and performs level up when applicable"""
+	if player.exp >= player.next_level_at:
+		player.level += 1
+		player.next_level_at = player.get_level_up_val()
+
+		clear_screen()
+		text = '**** {} LEVELS UP! ****'.format(player.info['Name'].upper())
+		step_printer(text, 0.04)
+		time.sleep(0.8)
+		print()
+		print('\n{} is now Level {}. Awesome!'.format(player.info['Name'], player.level), flush=True)
+		player.max_hp += 4  
+		time.sleep(0.8)
+		print('\nHP has been increased to {}'.format(player.max_hp))
+
+		press_enter()
 
 def run_game(settings, player):	
 	"""prints Main Menu and takes user input"""
@@ -812,9 +960,12 @@ def run_game(settings, player):
 
 			if player.created:
 				# we create the game grid object here, so that it's a brand new grid whenever option 2 (start game) is chosen
+				# BUT, if you want a new gamegrid object for each floor of dungeon, it probably shouldn't be here, right?
+				
 				grid = GameGrid(settings, player)
 				game_log = GameLog(player, grid)
-				# player entered 2, so we call game_action, which is the main 'game in play' function:
+
+				# this call to game_action effectively starts the running gameplay loop:
 				game_action(settings, player, grid, game_log, dice) 
 				# note all the locations the arguments in game_action() call are being drawn from... they're all over the place!
 				# that's because of Python's weird scope rules.
@@ -830,6 +981,7 @@ def run_game(settings, player):
 
 def movement_engine(settings, player, grid, selection):
 
+	# assign current coords to previous coords because immediatley after this we change/update current coords.
 	player.previous_coords = player.player_location.copy()
 
 	if selection == 'n' and player.player_location[0] > 0:
@@ -850,11 +1002,7 @@ def movement_engine(settings, player, grid, selection):
 
 	grid.all_room_grid[player.previous_coords[0]][player.previous_coords[1]]['Visited'] = True
 
-	return True 	# things down here are triggered even if an if/elif/else is True above; after 
-					# executing code block for the if / elif, program moves to next section of code in 
-					# the function body, which is this area (unless a Return was hit, in which case the
-					# function is exited at the Return statement. So the 'else' condition, if True, will
-					# exit the function).
+	return True
 
 def determine_next_event(settings, player, grid, game_log, command):
 	"""determine event that should occur on entering Room, and trigger that event"""
@@ -870,51 +1018,167 @@ def determine_next_event(settings, player, grid, game_log, command):
 		direction = 'East'
 
 	# we could look directly at the room dictionary stored in the all_room_grid, but it's less code to simply
-	# look at the 'current_room_type' attribute of the grid, which is based on that same info anyway.
+	# look at the 'current_room_type' attribute of the grid, which is based on that same info anyway. (same goes for
+	# room_status)
 
 	move_text = ('Moving {}'.format(direction.title()))
 
 	slow_print_elipsis(move_text, '', 4)
 
-	if grid.current_room_type == 'Empty':
+	if grid.current_room_type == 'Empty' and grid.room_status != True: # bypass print for already visited rooms.
 		slow_print_elipsis('This room', 'is EMPTY.')
 		time.sleep(0.8)
 	elif grid.current_room_type == 'Treasure' and grid.room_status != True:
 		slow_print_elipsis('This room', 'has a TREASURE chest!')
 		time.sleep(0.8)
-		treasure_event(player)
-	elif grid.current_room_type == 'Exit' and grid.room_status != True:
-		slow_print_elipsis('This room', 'has a STAIRCASE going DOWN!')
+		treasure_event(settings, player)
+	
+	elif grid.current_room_type == 'Exit': # no check on room_status because entering Exit room always triggers exit event!
+		slow_print_elipsis('This room', 'has a staircase going down!')
 		time.sleep(0.8)
-		exit_event()
-	elif grid.current_room_type == 'Mystic' and grid.room_status != True:
-		slow_print_elipsis('This room', 'has a MYSTIC!')
+		exit_event(settings, player, grid, game_log) # useful at all to use an if exit_event() here and have it return bool ??
+
+	elif grid.current_room_type == 'Mystic' and grid.merchant_closed != True: # diff variable because behaves differently
+		slow_print_elipsis('This room', 'feels spooky...')
 		time.sleep(0.8)
-		mystic_event()
+		mystic_event(settings, player, grid)
 	elif grid.current_room_type == 'Monster' and grid.room_status != True:
 		slow_print_elipsis('This room', 'has a MONSTER!')
 		time.sleep(0.8)
 		battle_event(settings, player, grid, game_log)
+	else:
+		slow_print_elipsis('This room', 'seems familiar.')
+		time.sleep(0.8)	# this else will only occur if the room being entered has already been visited.
 
-	# note: 0.8 is a very effective amount of time for a pause, continue to use that value any time you 
-	# want to display something, pause, then move on (without needing to use press_enter)
-
-	# idea: if you have ONE press_enter call right here, could you avoid putting any of them
-	# into the event functions that are called above?
-	# press_enter()
 # define room event functions -- triggered on entering unvisited room.
 
-def treasure_event(player):
-	print('A treasure event is now triggered!')
+def treasure_event(settings, player):
+
+	if settings.difficulty == 1:
+		treasure_roll = randint(5, 8)
+
+	if settings.difficulty == 2 or settings.difficulty == 3:
+		treasure_roll = (randint(3, 10) + 3)
+
+	if settings.difficulty > 3:
+		treasure_roll = (randint(3, 12) + 5)
+
+	step_printer('OPENING CHEST...')
+	print('You found {} Gold Pieces inside!'.format(treasure_roll))
+
+	player.gold += treasure_roll
+
+	time.sleep(0.6)
+	print('{} GP +{}'.format(player.info['Name'], treasure_roll))
 	press_enter()
 
-def mystic_event():
-	print('A mystic event is now triggered!')
-	press_enter()
+def mystic_event(settings, player, grid):
+	
+	clear_screen()
+	slow_print_elipsis('An apparition is forming', 'it\'s a Mystic Merchant!')
+	time.sleep(0.8)
 
-def exit_event():
-	print('An exit event is now triggered!')
-	press_enter()
+	elixir = create_random_elixir(settings)
+
+	print('\nMYSTIC:\nCurrently I\'m selling {} Elixir for {} gold pieces.'.format(elixir['Type'].title(), elixir['Cost']))
+
+	active = True
+	possible_choices = ['yes', 'no', 'y', 'n']
+
+	print('\nBuy the item?')
+
+	while active:
+
+		response = get_player_input()
+
+		if response not in possible_choices:
+			press_enter('You did not enter a valid command, try again')
+
+		else:
+			if response.startswith('y') and elixir['Cost'] <= player.gold:
+				print('\nMYSTIC:\nAn excellent decision, wise {}.'.format(player.info['Name']))
+
+				player.elixirs.append(elixir)
+				player.gold -= elixir['Cost']
+
+				time.sleep(0.6)
+				print('\n{} Elixir has been added to your inventory!'.format(elixir['Type'].title()))
+				time.sleep(0.6)
+				print('{} gold pieces removed.'.format(elixir['Cost']))
+				time.sleep(0.6)
+				slow_print_elipsis('The Mystic begins to shimmer', '\nand disappears before your eyes!')
+
+				# purchasing an item closes the merchant for that floor. Might updated later so deeper
+				# floors can have more than one merchant, but for now, it's 1 per board and after a purchased, they
+				# are gone.
+				grid.merchant_closed = True
+
+			elif response.startswith('y') and elixir['Cost'] > player.gold:
+				print('\nMYSTIC:\nI\'m sorry, but you currently cannot afford my wares.')
+
+			elif response.startswith('n'):
+				print('\nMYSTIC:\nAlright, but I hope you know what you\'re doing out there!')
+
+			# there is no further else, all possibilities are accounted for above
+
+			active = False
+			press_enter()
+
+def create_random_elixir(settings):
+	"""create an elixir at random for each visit to a Mystic room. Scales with difficulty setting"""
+
+	elixir = {}	
+	elixir_types = ['health', 'health', 'health', 'berzerk', 'escape'] # 3x health so that it's more likely a choice.
+	
+	chosen_elixir = choice(elixir_types)
+
+	# establish strength of elixir based on settings > difficulty
+	if settings.difficulty < 3:										# diff is 1 or 2
+		elixir_strength = 1
+	elif settings.difficulty >= 3 and settings.difficulty <= 5:		# diff is 3 to 5
+		elixir_strength = 2
+	elif settings.difficulty > 5:									# diff is > 5
+		elixir_strength = 3
+
+	# establish cost of elixir based on type
+	if chosen_elixir == 'health':
+		cost = (5 * elixir_strength)
+	elif chosen_elixir == 'berzerk':
+		cost = 10
+	elif chosen_elixir == 'escape':
+		cost = 15
+
+	# build the elixir dictionary. remember, if indexed key doesn't exist in dicionary, it gets added to it!
+	elixir['Type'] = chosen_elixir
+	elixir['Strength'] = elixir_strength
+	elixir['Cost'] = cost
+
+	return elixir
+
+	# NOTE: currently strength only applies to a health elixir, but perhaps I can work out how it effects
+	# berzerk as well, etc.
+
+def exit_event(settings, player, grid, game_log):
+	"""player chooses if they will descend to next level of the dungeon"""
+
+	print('You found the exit to the next level of the dungeon!')
+	time.sleep(0.08)
+	print('Do you want to go down the stairs now?')
+
+	response = get_input_valid(key='exit_room')
+
+	if response.startswith('y'):
+		grid.floor_exited = True
+		slow_print_elipsis('DESCENDING', '')
+		#time.sleep(0.6)
+
+		# return True
+
+	else:
+		print('Ok, maybe next time...')
+		time.sleep(0.8)
+
+		# return False
 
 def battle_event(settings, player, grid, game_log):
 	# create a monster
@@ -938,6 +1202,7 @@ def encounter_monster(player, monster, grid, game_log):
 	slow_print_elipsis('You have encountered a', monster.name.upper())
 
 	print('Run Difficulty: {}'.format(run_difficulty))
+	print('\nActions:\t Fight | Run')
 
 	while active:
 
@@ -960,7 +1225,7 @@ def encounter_monster(player, monster, grid, game_log):
 
 					# make current room (one being run out of) grid icon change back to a *
 					grid.grid_matrix[player.player_location[0]][player.player_location[1]] = ' * '
-					# move player coords equal that of previously visited room
+					# make player coords equal that of previously visited room
 					player.player_location = player.previous_coords.copy()
 
 					# update everything since room has reverted
@@ -991,7 +1256,7 @@ def run_attempt(player, run_difficulty):
 	"""rolls player dice, prints out roll, returns True if roll beats run_dc, False otherwise"""
 	roll = player.dice.roll(20)
 	player.dice.print_roll()
-	return (roll > run_difficulty)		# returns a bool
+	return (roll >= run_difficulty)		# returns a bool
 
 def battle_main(player, monster, run_failed):
 
@@ -1050,7 +1315,7 @@ def battle_main(player, monster, run_failed):
 			fight_mods['player_damage'] = 0
 			atype['attack'] = None
 
-		elif not active:
+		elif not active:					# shouldn't this be the same result as just 'else'? but it didn't work...
 			print('The battle is over!')
 			press_enter()	#  second of two calls to press_enter, for pause before ending battle sequence.
 			# clear_screen()
@@ -1077,15 +1342,15 @@ def print_battle_commands():
 	print('A deliberate attack, going for a weak point. Slightly')
 	print('harder to hit (Enemy AC +2) but success means +2 to ')
 	print('your damage roll.')
-	print('\n')
-	print('Type the name (or shortcut) of attack to enter command.')
 	print()
+	print('Type the name (or shortcut) of attack to enter command.')
+	
 	press_enter()
 
 def battle_header(player, monster, round_num):
 	clear_screen()
 	print('ROUND: {}'.format(round_num))
-	print('{: <12} \t HP: {: <3} AC: {: <3} \t WEP: {} ({})'.format(player.info['Name'].upper(), player.hp, player.armor.armor_class, player.weapon.name, player.weapon.icon))
+	print('{: <12} \t HP: {: <3} AC: {: <3} \t WEP: {}{}'.format(player.info['Name'].upper(), player.hp, player.armor.armor_class, player.weapon.name, player.weapon.icon))
 	print('{: <12} \t HP: {: <3} AC: {: <3}'.format(monster.name.upper(), monster.hp, monster.armor_class))
 	print()
 
@@ -1096,13 +1361,14 @@ def check_battle_status(player, monster, crits):
 	if player.hp <= 0:
 		print('\nYou have been defeated by the {}!'.format(monster.name))
 		player.dead = True
+		time.sleep(0.8)
 		return True
 
 	elif monster.hp <= 0:
 		if not crits['crit']:
 			print('\nYou have destroyed the {}!'.format(monster.name))
 		else:
-			print()
+			print()	# this may not be necessary, need to playtest on critical hit success for line spacing.
 
 		time.sleep(0.8)
 		gain_exp(player, monster)
@@ -1168,23 +1434,25 @@ def attack_menu_input(player, monster, fight_mods, round_num):
 
 		battle_header(player, monster, round_num)	# called because menu calls will clear screen
 
+		print('Actions:\t Strike | Headshot | Flurry | Finesse | Help')
+		print()
 		print('Choose your attack...')
 
 		command = get_input_valid(key='battle')
 
-		# accessing menu keeps loop running; any other input exits loop and proceeds to attack
+		# accessing menus keeps the loop running; any other input exits loop and proceeds to attack
 
-		if command == 'c':
+		if command == 'help':
 			print_battle_commands()
 		elif command == 'p':
 			print('This is how you will use a potion, eventually.')
 			press_enter()
 		elif command == 'i':
-			print('This would show player inventory.')
-			press_enter()
+			player.show_inventory()
 		elif command == 'b':
-			print('And this would show player bio....')
-			press_enter()
+			player.print_player_info()
+		elif command == 'print':
+			monster.print_stats()
 		else:
 			active = False	# non-menu command entered, exit loop so battle can proceed.
 
@@ -1317,7 +1585,7 @@ def monster_damage(player, monster):
 def gain_exp(player, monster):
 	"""award experience to player for beating a monster"""
 
-	exp = (monster.difficulty * 10)
+	exp = ((monster.difficulty * 10) + randint(0,10))
 	player.exp += exp
 
 	#any gain of exp always prints a message about the gain...might need to decouple the two.
@@ -1327,8 +1595,7 @@ def gain_exp(player, monster):
 # instantiate game objects
 
 # how do I make these not be global variables? should I have a 'build start objects' function
-# that is called before run_game? but then how do I pass the objects that it builds to run_game?
-# or can I simply move these three inside run_game ?
+# that is called before run_game? 
 
 settings = GameSettings()
 player = Player(settings)
