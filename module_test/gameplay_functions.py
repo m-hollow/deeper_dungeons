@@ -4,6 +4,7 @@ import copy
 
 from ui_functions import *
 from classes import *
+from battle import *
 
 # define main 'game in play' functions
 
