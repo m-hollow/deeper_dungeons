@@ -23,7 +23,7 @@ Deeper Dungeons is Michael Holloway's code-learning sandbox.
 | ------ | ------ |
 | Battle | [module_test/battle.py](module_test/battle.py) |
 | Classes | [module_test/classes.py](module_test/classes.py) |
-| Gameplay | [module_test/gameplay_functions.py](module_test/gameplay-functions.py) |
+| Gameplay | [module_test/gameplay_functions.py](module_test/gameplay_functions.py) |
 | UI | [module_test/ui_functions.py](module_test/ui_functions.py) |
 
 ### Tech
