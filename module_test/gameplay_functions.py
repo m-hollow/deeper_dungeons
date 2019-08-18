@@ -2,6 +2,9 @@ import time
 from random import randint, choice
 import copy
 
+from ui_functions import *
+from classes import *
+
 # define main 'game in play' functions
 
 def action_menu(game_log):

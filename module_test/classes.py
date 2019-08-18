@@ -1,3 +1,9 @@
+import time
+from random import randint, choice
+import copy
+
+from ui_functions import *
+
 # define game objects
 
 class GameSettings():
