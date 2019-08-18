@@ -1,3 +1,9 @@
+import time
+from random import randint, choice
+import copy
+
+from classes import *
+
 # define game UI functions.
 
 def you_are_dead(player, text=''):

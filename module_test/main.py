@@ -5,7 +5,6 @@ from battle import *
 
 settings = GameSettings()
 player = Player(settings)
-dice = Dice()
 
 # call the main run_game function loop
 

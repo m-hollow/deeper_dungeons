@@ -4,6 +4,7 @@ from random import randint, choice
 import copy
 
 from ui_functions import *
+from classes import *
 
 def encounter_monster(player, monster, grid, game_log):
 	"""monster is engaged and decision to fight or run is chosen by player"""

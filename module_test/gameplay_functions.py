@@ -31,7 +31,7 @@ def action_menu(game_log):
 	# if player gets the else statement above for invalid input, we fall back to game_action, which
 	# has nothing left to do (command == None), so it loops, and this function is called again.
 
-def game_action(settings, player, grid, game_log, dice):
+def game_action(settings, player, grid, game_log):
 
 	grid.update_player_location() # needs to happen here initially so the X gets printed to board
 	game_log.update_log() # same, needs to happen so its attributes are not in initial state 'None'
@@ -181,7 +181,7 @@ def run_game(settings, player):
 				game_log = GameLog(player, grid)
 
 				# this call to game_action effectively starts the running gameplay loop:
-				game_action(settings, player, grid, game_log, dice) 
+				game_action(settings, player, grid, game_log) 
 				# note all the locations the arguments in game_action() call are being drawn from... they're all over the place!
 				# that's because of Python's weird scope rules.
 				# you'd think, logically / organizationally, that this function (run_game) could only pass objects that had
