@@ -14,7 +14,7 @@ Deeper Dungeons is Michael Holloway's code-learning sandbox.
   - Potions! Which almost work!
 
 > "From the lowest dungeon to the highest peak I fought with the Balrog of Morgoth...
-> Until at last I threw down my enemy and smote his ruin upon the mountain side...
+> Until at last I threw down my enemy and smote his ruin upon the mountain side..."
 > -- Gandalf the White
 
 ## Modularization In-Progress
