@@ -94,7 +94,13 @@ def game_action(settings, player, grid, game_log):
 				settings.reset_settings()
 			
 			if grid.floor_exited:	# flag for player finding exit and choosing to use it during this turn (in exit event)
-				make_next_floor(settings, player, grid, game_log)
+				grid = make_next_floor(settings, player, grid, game_log)
+				game_log = make_next_gamelog(game_log, grid, player)
+				
+				#reset_player_location(settings, player)
+
+				grid.update_player_location() # needs to happen here just like it does above before while loop
+				game_log.update_log()
 		
 def make_next_floor(settings, player, grid, game_log): # should this be a method of GameGrid class ?
 	"""updates gamestate to update settings and generate new grid and log"""
@@ -103,16 +109,23 @@ def make_next_floor(settings, player, grid, game_log): # should this be a method
 	settings.difficulty += 1	
 	settings.grid_size += 2
 	
-	# this is the part that doesn't work. 
-	# I know I can just update the grid object instead of making a new one, but what if I want to make a new one?
-	# how do we then USE the new one?
+	grid = GameGrid(settings, player)
+	return grid
 
-	grid = GameGrid(settings, player)	
-	game_log = GameLog(player, grid)	
+def reset_player_location(settings, player):
+	"""call this when a new dungeon floor is created so player will be at start"""
+	# should this simply be a method of the Player class?
 
-	#update player location 
 	player.player_location = [(settings.grid_size - 1), (int(settings.grid_size / 2) - 1)]
-	player.previous_coords = [0,0]
+	#player.previous_coords = [0,0]
+
+	# bug: why is the X not appearing when the new grid is first printed ?
+
+def make_next_gamelog(game_log, grid, player):
+	"""call this when a new dungeon floor is created so gamelog updates to match new dungeon grid"""
+	game_log = GameLog(player, grid)
+
+	return game_log
 	
 def check_player_status(settings, player): # seems we don't actually need settings ? 
 	"""check in every pass of game action event loop to see if player status has changed in a way that triggers event"""
