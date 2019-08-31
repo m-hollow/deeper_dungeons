@@ -31,42 +31,46 @@ class GameSettings():
 		"""dev feature to confirm if settings are getting udpated"""
 		clear_screen()
 		print('Grid Size: {}'.format(self.grid_size))
+		print('Starting Gold: {}'.format(self.starting_gold))
 		print('Difficulty: {}'.format(self.difficulty))
-
-		press_enter()
 
 class GameGrid():
 	"""Creates a grid object for the game of variable size"""
 
-	# floor_level = 0
+	floor_level = 0		# class attribute 
 
 	def __init__(self, settings, player):
 
-		# self.__class__.floor_level += 1	# currently this isn't working at all. updating at unexpected times.
-		
+		self.__class__.floor_level += 1	
+
+		self.floor_chrono = self.__class__.floor_level # order floor was created among all floors, e.g. 1 = first, 2 = second, etc.
 		self.settings = settings
 		self.player = player
 
 		self.row = self.settings.grid_size		# grid size based on current settings
 		self.col = self.settings.grid_size
 
-		# question: should floor_level be stored in settings?
-		self.floor_level = 1		#original use of floor level before class attribute above
 		self.floor_exited = False
-		self.merchant_closed = False
 
 		self.grid_matrix = self.make_grid()			# grid for graphics, containing strings '*'
 		self.all_room_grid = self.generate_rooms()  # grid for room data, containing room dictionaries
 
 		self.create_start() # same as below, adds start on construction
 		self.create_exit()	# doesn't need to return anything, just adds the exit on construction
-		self.create_mystic() # one mystic in every dungeon level
+		self.create_mystic() # number of mystics = floor level, perhaps give it a +1 as well (after floor one)
 		
 		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] 
 		
 		# this is a bool and is used to track if current inhabited room was previously visited or not
 		# and yes, you could perform this check by checking the all_room_grid and looking at 'Visited' bool directly.
 		self.room_status = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Visited']
+
+	def reset_floor_level(self):
+		"""we need to call this on player death or game quit, otherwise grid instance on restart picks up from last point"""
+		self.__class__.floor_level = 1
+
+		# or, instead of calling this, simply add a line of code to set GameGrid.floor_level to 0 *before* instantiating 
+		# a grid object.
 
 	def make_grid(self):
 		# list comprehension to create matrix of the game grid graphics
@@ -84,6 +88,11 @@ class GameGrid():
 
 	def update_current_roomtype(self):
 		"""udpate the current_room_type attribute to reflect current player location"""
+
+		# this is as close as I initially got to a 'state' variable. the grid object constantly updates the 
+		# 'room type' attribute and 'room status' attribute to reflect 'current state' of player location.
+		# but it's all just based on the dictionary contents stored in the dictionary that resides at coordinates
+		# where player is currently located.
 
 		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type']
 		self.room_status = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Visited']
@@ -151,25 +160,53 @@ class GameGrid():
 
 	def create_mystic(self):
 
-		active = True
+		# create as many mystics as = the level of the dungeon
 
-		while active:
+		# level one will always have one mystic
+		if self.__class__.floor_level == 1:
+			active = True
 
-			random_x = randint(0, self.row - 1)
-			random_y = randint(0, self.col - 1)
-			
-			coords = [random_x, random_y]
+			while active:
 
-			if coords != self.player.player_location and self.all_room_grid[random_x][random_y]['Type'] != 'Exit':
-				self.all_room_grid[random_x][random_y]['Type'] = 'Mystic'
-				active = False
-			else:
-				pass
+				random_x = randint(0, self.row - 1)
+				random_y = randint(0, self.col - 1)
+				
+				coords = [random_x, random_y]
+
+				if coords != self.player.player_location and self.all_room_grid[random_x][random_y]['Type'] != 'Exit':
+					self.all_room_grid[random_x][random_y]['Type'] = 'Mystic'
+					self.all_room_grid[random_x][random_y]['Mystic_Closed'] = False # adds this key-val pair to grid dictionary
+					active = False
+				else:
+					pass
+
+		# floors beyond level 1 will have a quanity of mystics equal to floor level, + a random amount added.
+		elif self.__class__.floor_level > 1:
+
+			extra_mystics = randint(0, 2)
+
+			for level in range(self.__class__.floor_level + extra_mystics):
+
+				active = True
+
+				while active:
+
+					random_x = randint(0, self.row - 1)
+					random_y = randint(0, self.col - 1)
+					
+					coords = [random_x, random_y]
+
+					if coords != self.player.player_location and self.all_room_grid[random_x][random_y]['Type'] != 'Exit':
+						self.all_room_grid[random_x][random_y]['Type'] = 'Mystic'
+						self.all_room_grid[random_x][random_y]['Mystic_Closed'] = False # will add this key-val pair only to mystic rooms
+						active = False
+					else:
+						pass
 
 	def print_grid(self):
 		"""print the visual game grid"""
 		
-		print('\nLV.{}'.format(self.floor_level))
+		print('\nLV.{}'.format(self.floor_level))	# will find the class attribute floor_level after looking at instance attributes.
 
 		for r in self.grid_matrix:
 			for c in r:
@@ -242,23 +279,22 @@ class Dice():
 
 class Weapon():
 	"""Generates a weapon object with type and damage"""
-	def __init__(self, name, damage):
+	def __init__(self, name, damage_roll, bonus=[]):
 		self.name = name
-		self.damage = damage
+		self.damage_roll = damage_roll
 		self.icon = self.get_dam_icon()
-
-	def modify_weapon(self, add_to_damage):
-		self.name += '++'
-		self.damage += add_to_damage
+		self.bonus = bonus
 
 	def print_stats(self):
 		print('*** WEAPON INFO ***')
 		#print()
 		print('TYPE{:.>15}'.format(self.name))
 		print('DAMAGE{:.>13}'.format(self.damage))
+		print()
+		# add mods here
 
 	def get_dam_icon(self):
-		return '(1d' + str(self.damage) + ')'
+		return '(1d' + str(self.damage_roll) + ')'
 
 class Armor():
 	"""only instantiated as an attribute of player class"""
@@ -283,6 +319,10 @@ class Player():
 
 		self.created = False
 		self.dead = False
+		self.escaping = False
+
+		self.current_state = ''
+	    self.potion_mods = {'player_attack': 0, 'player_damage': 0}
 
 		self.info = {'Name':'None', 'Race':''}
 
@@ -295,17 +335,13 @@ class Player():
 		self.exp = 0	# set on creation of player object
 		self.next_level_at = self.get_level_up_val()  # determined on creation of player object
 
-		# checks will need to be done in game loop to see if player's current exp is > than level_up, and if so,
-		# we need to call a level up function AND ALSO call a function to increase 'level_up' attribute to next
-		# setting (so next level-up occurs at higher exp amount, etc).
-
 		self.dice = Dice()
 
 		# player items
 		self.elixirs = []
 		self.items = ['Torch',]
 		self.weapon = Weapon('Dagger', 4)
-		self.armor = Armor('Leather', 10)
+		self.armor = Armor('Warm Sweater', 9)
 
 		# player location on grid. continually updated during gameplay.
 		self.player_location = [(self.settings.grid_size - 1), (int(self.settings.grid_size / 2) - 1)]
@@ -364,7 +400,7 @@ class Player():
 		print("Armor{:.>18}".format(self.armor.name))
 		print("Items{:.>18}".format(self.items[0])) # how to show all list items here ?
 		print()
-		print("#       POTIONS       #\n")
+		print("#       ELIXIRS       #\n")
 		
 		if self.elixirs:
 			count = 1
@@ -373,13 +409,24 @@ class Player():
 				count += 1
 			print()
 		
-		press_enter()
+		if self.elixirs:
+			print()
+			print('Use an item?   Yes | No')
+			answer = get_input_valid(key='yes_no')
+
+			if answer.startswith('n'):
+				pass
+			elif answer.startswith('y'):
+				self.use_potion()
+		else:
+			press_enter()
 
 	def reset_player(self):
 		"""reset the player, triggered on exit of active game"""
 		# this will probably need modification once saving and loading are introduced!
-
+		
 		self.player_location = [(self.settings.grid_size - 1), (int(self.settings.grid_size / 2) - 1)]
+		self.previous_coords = [0,0]
 
 		self.level = 1
 		self.hp = 10
@@ -388,19 +435,149 @@ class Player():
 		self.exp = 0
 		self.next_level_at = self.get_level_up_val()
 
+	    self.potion_mods = {'player_attack': 0, 'player_damage': 0}
+
+		self.current_state = ''
+
 		self.elixirs = []
 		self.weapon = Weapon('Dagger', 4)
 		self.armor = Armor('Leather', 10)
 
 		self.dead = False
+		self.escaping = False
+
+	def use_potion(self):
+		"""player uses a potion via the inventory screen"""
+
+		response = ''
+		current_max = len(self.elixirs)
+		active = True
+
+		while active:
+
+			clear_screen()
+			print('{}\'s ELIXIRS'.format(self.info['Name']))
+			print()
+
+			if self.elixirs:	# player has elixirs, following code is for printing and using one.
+
+				# print the elixirs the player currently has
+				count = 1
+				for elixir in self.elixirs:
+					print('{}{:.>22} '.format(count, elixir['Type'].title()))
+					count += 1
+
+				# create a flag for input validation
+				potion_inventory_valid = False
+
+				# input validation loop to avoid user selecting a potion # beyond their actual current items
+				while not potion_inventory_valid:
+
+					# get players choice: the number of a potion, or Q to quit this menu
+
+					response = get_input_valid('\nEnter # of Elixir to use, or Q to quit.', 'battle_potion')
+
+					#player chose a number higher than current inventory allows
+					if response.lower() != 'q' and int(response) > current_max:
+						print('You do not have an elixir stored at that number, try again.')
+					
+					# player entered either 'q' or a valid potion number, so we exit this validation loop
+					else:
+						potion_inventory_valid = True
+				
+				# now we check if what they entered was q, if it was, we quit by ending the main loop ('active')
+				if response.lower() == 'q':
+					print('Cool. Saving \'em for later. Smart!')	
+					active = False
+
+				# choice was not q, so it is string of an integer
+				else: 
+					# index the elixir list attribute of player, then index the Type key of that chosen dictionary
+
+					response_int = int(response) - 1	# to account for player always entering 1 greater than actual index location
+
+					#print('BTW, choice_int currently = {}'.format(choice_int))
+
+					if self.elixirs[response_int]['Type'] == 'health':
+						bonus = 5 * self.elixirs[response_int]['Strength']
+						if self.hp + bonus > self.max_hp:
+							self.hp = self.max_hp
+						else:
+							self.hp += bonus
+
+						time.sleep(0.06)
+						step_printer('DRINKING ELIXIR...')
+						print('\nYou drank the HEALTH elixir and gained {} hit points!'.format(bonus))
+
+						del self.elixirs[response_int]
+						active = False
+
+					elif self.elixirs[response_int]['Type'] == 'health max':
+						self.hp = self.max_hp
+
+						time.sleep(0.06)
+						step_printer('DRINKING ELIXIR...')
+						print('\nYou drank the HEALTH MAX elixir and regained all your HP!')
+
+						del self.elixirs[response_int]
+						active = False
+
+					elif self.elixirs[response_int]['Type'] == 'berzerk':
+
+						if self.current_state != 'battle':
+							print('The Berzerk Elixir is for use during a battle!')
+
+						elif self.current_state == 'battle':
+				
+							bonus = 4
+							self.potion_mods['player_attack'] += bonus
+							self.potion_mods['player_damage'] += bonus
+							time.sleep(0.06)
+							print('You used a BERZERK elixir!')
+							time.sleep(0.5)
+							print('+4 attack roll')
+							time.sleep(0.5)
+							print('+4 damage roll')
+
+							del self.elixirs[response_int]
+
+							active = False
+
+					elif self.elixirs[response_int]['Type'] == 'escape':
+
+						if self.current_state != 'battle':
+							print('The Escape Elixir is for use during a battle!')
+
+						elif self.current_state == 'battle':
+
+							print('You used an ESCAPE elixir!')
+							time.sleep(0.5)
+							print('You immediately flee this battle...')
+							time.sleep(0.5)
+							print('And return to the previous room.')
+							time.sleep(0.5)
+
+							del self.elixirs[response_int]
+
+							self.escaping = True
+
+			else: # player pressed p for potions but has none in their inventory at this time
+				print('You do not have any Elixirs to use at this time, try to find some!')
+				active = False
+
+			press_enter()
 
 class Monster():
 	"""Generate a monster object for battle sequences, diff parameter determines difficulty"""
 
 	def __init__(self, difficulty):
-		self.difficulty = difficulty # add some randomization of difficulty here
+		self.difficulty = difficulty 
+		self.name = self.get_monster_name()	# NOTE: also determines actual level if diff is > 1
+		
 		self.diff_string = self.get_diff_string()
 		
+		self.actual_level = 1 # modified depending on result of 
+
 		self.dice = Dice()	# constructs a die object by calling Dice class
 
 		self.advantage = False	# determines who gets first attack, player or monster
@@ -408,97 +585,132 @@ class Monster():
 		self.damage_roll = self.get_damage_roll()
 		self.armor_class = self.get_armor_class()
 
-		self.name = self.get_monster_name()	# gets random name on construction
 		self.hp = self.get_hit_points()		# gets HP depending on difficulty
 		
 	def get_armor_class(self):
 		if self.difficulty == 1:
-			return 7
+			return randint(4, 8)
 		if self.difficulty == 2:
-			return 11
+			return randint(8, 11)
 		if self.difficulty == 3:
-			return 14
+			return randint(10, 15)
 		if self.difficulty == 4:
-			return 16
+			return randint(11, 17)
 
 	def get_diff_string(self):
 		"""gets appropriate string based on difficult level int"""
-		if self.difficulty == 1:
+		if self.actual_level == 1:
 			return 'EASY'
-		if self.difficulty == 2:
+		if self.actual_level == 2:
 			return 'MEDIUM'
-		if self.difficulty == 3:
+		if self.actual_level == 3:
 			return 'HARD'
-		if self.difficulty > 3:
+		if self.actual_level > 3:
 			return 'ELITE'
 
 	def get_monster_name(self):
 		"""import name file, grab a name at random, return it -- all based on difficulty level"""
 
+		with open('text_files/easy_monsters.txt', encoding='utf-8') as file_object_1:
+			easy_monsters = file_object_1.read().split()
+
+		with open('text_files/medium_monsters.txt', encoding='utf-8') as file_object_2:
+			medium_monsters = file_object_2.read().split()
+
+		with open('text_files/hard_monsters.txt', encoding='utf-8') as file_object_3:
+			hard_monsters = file_object_3.read().split()
+
+		with open('text_files/elite_monsters.txt', encoding='utf-8') as file_object_4:
+			elite_monsters = file_object_4.read().split()
+
 		if self.difficulty == 1:
-			filename = 'text_files/easy_monsters.txt'
-
-			with open(filename, encoding='utf-8') as file_object:
-				monster_names = file_object.read().split()
-
-			index = randint(0, len(monster_names) - 1)
-			return monster_names[index]
+		
+			index = randint(0, len(easy_monsters) - 1)
+			self.actual_level = 1
+			return easy_monsters[index]
 
 		elif self.difficulty == 2:
-			filename = 'text_files/medium_monsters.txt'
+			
+			num = randint(1, 3)
 
-			with open(filename, encoding='utf-8') as file_object:
-				monster_names = file_object.read().split()
-
-			index = randint(0, len(monster_names) - 1)
-			return monster_names[index]
+			if num == 1:
+				index = randint(0, len(easy_monsters) - 1)
+				# need to actually change monster's difficulty level to match chosen monster type!
+				self.actual_level = 1
+				return easy_monsters[index]
+			elif num > 1:
+				index = randint(0, len(medium_monsters) -1)
+				self.actual_level = 2
+				return medium_monsters[index]
 
 		elif self.difficulty == 3:
-			filename = 'text_files/hard_monsters.txt'
 
-			with open(filename, encoding='utf-8') as file_object:
-				monster_names = file_object.read().split()
+			num = randint(1, 6)
 
-			index = randint(0, len(monster_names) - 1)
-			return monster_names[index]
+			if num == 1:
+				index = randint(0, len(easy_monsters) - 1)
+				self.actual_level = 1
+				return easy_monsters[index]
+			elif num > 1 and num < 4:
+				index = randint(0, len(medium_monsters) -1)
+				self.actual_level = 2
+				return medium_monsters[index]
+			elif num >= 4:
+				index = randint(0, len(hard_monsters) -1)
+				self.actual_level = 3
+				return hard_monsters[index]
 
 		elif self.difficulty > 3:
-			filename = 'text_files/elite_monsters.txt'
 
-			with open(filename, encoding='utf-8') as file_object:
-				monster_names = file_object.read().split()
+			num = randint(1, 9)
 
-			index = randint(0, len(monster_names) - 1)
-			return monster_names[index]
+			if num == 1:
+				index = randint(0, len(easy_monsters) - 1)
+				self.actual_level = 1
+				return easy_monsters[index]
+			elif num > 1 and num < 4:
+				index = randint(0, len(medium_monstes) -1)
+				self.actual_level = 2
+				return medium_monsters[index]
+			elif num >= 4 and num < 7:
+				index = randint(0, len(hard_monsters) -1)
+				self.actual_level = 3
+				return hard_monsters[index]
+			elif num >= 7:
+				index = randint(0, len(elite_monsters) -1)
+				self.actual_level = 4
+				return elite_monsters[index]
 
 	def get_hit_points(self):
-		if self.difficulty == 1:
+		if self.actual_level == 1:
 			return self.dice.roll(4)
-		elif self.difficulty == 2:
-			return ((self.dice.roll(6)) + 2)
-		elif self.difficulty == 3:
-			return ((self.dice.roll(10)) + 4)
-		elif self.difficulty > 3:
-			return ((self.dice.roll(20)) + 10)
+		elif self.actual_level == 2:
+			return ((self.dice.roll(5)) + 2)
+		elif self.actual_level == 3:
+			return ((self.dice.roll(8)) + 4)
+		elif self.actual_level > 3:
+			return ((self.dice.roll(20)) + 9)
 
 	def print_stats(self):
 		print('# MONSTER STATS       #')     #23 chars
-		print('NAME:{:.>18}'.format(self.monster_name.upper()))
-		print('DIFF LEVEL:{:.>12}'.format(self.diff_string))
+		print('NAME:{:.>18}'.format(self.name.title()))
+		print('LEVEL:{:.>17}'.format(self.actual_level))
+		print()
 		print('HP:{:.>20}'.format(self.hp))
-		print('AC:{:.>20}'.format(self.ac))
+		print('AC:{:.>20}'.format(self.armor_class))
+		print('DAMAGE:{:.>16}'.format(self.damage_roll))
 		print()
 		press_enter()
 
 	def get_damage_roll(self):
 		"""determine damage roll of monster via difficulty level"""
-		if self.difficulty == 1:
+		if self.actual_level == 1:
 			return 4
-		if self.difficulty == 2:
+		if self.actual_level == 2:
 			return 6
-		if self.difficulty == 3:
+		if self.actual_level == 3:
 			return 8
-		if self.difficulty > 3:
+		if self.actual_level > 3:
 			return 10
 
 class GameLog():

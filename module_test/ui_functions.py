@@ -77,7 +77,7 @@ def main_menu(player):
 	print('1. Build character')
 	print('2. Start New Game')
 	print('3. Load Game')
-	print('4. Change Game Settings')
+	print('4. View Game Settings')
 	print('5. Exit Game')
 
 	print('\nCurrently Loaded Character: {}'.format(player.info['Name']))
@@ -135,10 +135,14 @@ def get_possible_choices(key):
 	if key == 'standard':
 		possible_choices = ['n','s','e','w','i','b','c','d','q']
 	elif key == 'battle':
-		possible_choices = ['strike','headshot','s','h','p','i','b']
+		possible_choices = ['strike','headshot','s','h','i','b','m','monster']
 		possible_choices += ['finesse','fin','flurry','flu', 'help']
 	elif key == 'exit_room':
 		possible_choices = ['yes','no','y','n']
+	elif key == 'battle_potion':
+		possible_choices = ['1','2','3','4','5','6','7','8','9','q']
+	elif key == 'yes_no':
+		possible_choices = ['y', 'n', 'yes', 'no']
 
 	# add more as needed here
 
@@ -146,8 +150,6 @@ def get_possible_choices(key):
 	# inside the actual game functions, you will parse the inputs to perform the
 	# corresponding actions, *always knowing that a valid command has already been 
 	# entered*.
-
-	
 
 	return possible_choices
 

@@ -9,14 +9,14 @@ from battle import *
 # define main 'game in play' functions
 
 def action_menu(game_log):
-	"""print the game_log, the map, the command menu, take user input, and Return user choice"""
+	"""print the game_log, the map, the command menu, take user input, and return user choice"""
 
 	clear_screen()
 	game_log.print_log()	# this is THE print command of the game header -and- game map !! 
 							# if you want to create loops that keep header active, you'll either need to figure out
 							# how and where to move this, or call it more than once.
 	
-	possible_choices = ['c', 'n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'settings']
+	possible_choices = ['n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'settings', 'help', 'h', 'rest']
 	
 	command = get_player_input().lower()
 
@@ -31,6 +31,10 @@ def action_menu(game_log):
 	# function that calls this function, game_action, has a while loop that essentially handles that.
 	# if player gets the else statement above for invalid input, we fall back to game_action, which
 	# has nothing left to do (command == None), so it loops, and this function is called again.
+
+	# when that happens (action_menu is called again) it hits the clear_screen() right away, then prints
+	# the gamelog again, and calls get_player_input. This mean the "successive printing down screen" effect is
+	# avoided, because the screen is being -cleared and reprinted- *after the invalid input* event happens.
 
 def game_action(settings, player, grid, game_log):
 
@@ -66,9 +70,12 @@ def game_action(settings, player, grid, game_log):
 			"""show room types for each grid coordinate (dev only)"""
 			grid.dev_grid_showtypes()
 
-		elif command == 'c':
-			"""show player the available game commands they can use"""
+		elif command == 'h' or command == 'help':
 			command_menu(player)
+
+		elif command == 'r' or command == 'rest':
+			print('You\'re kidding, right? This is a DUNGEON. Hardly the place for a nap!')
+			press_enter()
 
 		elif command == 'settings':
 			"""show the current settings; this is purely for dev purposes"""
@@ -79,9 +86,6 @@ def game_action(settings, player, grid, game_log):
 			time.sleep(0.08)
 			player.reset_player()	#reset player so new game starts fresh, attributes back to initials
 			settings.reset_settings()
-
-			#reset_grid()	# unnecessary; grid is constructed when menu action 2 is chosen, so will be new every time.
-			#reset_log()	# same as grid
 			active = False
 
 		else:
@@ -90,26 +94,26 @@ def game_action(settings, player, grid, game_log):
 		if active: # we don't want to call check_player_status if user chose 'q' to quit above, so we do a check on active.
 			if check_player_status(settings, player): 	# if True, player is dead, end action event loop.
 				active = False
-				player.reset_player() # needs to be reset for new game start
 				settings.reset_settings()
-			
+				player.reset_player() # *must* happen after the settings reset!
+				
 			if grid.floor_exited:	# flag for player finding exit and choosing to use it during this turn (in exit event)
-				grid = make_next_floor(settings, player, grid, game_log)
+				grid = make_next_floor(settings, player, game_log) # successfully updates the primary grid object, because this
+																   # object created here is the one getting passed around for use!
 				game_log = make_next_gamelog(game_log, grid, player)
 				
-				#reset_player_location(settings, player)
-
 				grid.update_player_location() # needs to happen here just like it does above before while loop
 				game_log.update_log()
 		
-def make_next_floor(settings, player, grid, game_log): # should this be a method of GameGrid class ?
+def make_next_floor(settings, player, game_log):
 	"""updates gamestate to update settings and generate new grid and log"""
 	
 	# update settings
-	settings.difficulty += 1	
-	settings.grid_size += 2
+	settings.difficulty += 1	# whenever make_next_floor is called, difficulty goes up by 1.
+								# this is the core of the 'too linear' game structure.
+	settings.grid_size += 1		# 2 seemed a bit too drastic, so it's 1 for now....
 	
-	grid = GameGrid(settings, player)
+	grid = GameGrid(settings, player)	# create the new grid and return it
 	return grid
 
 def reset_player_location(settings, player):
@@ -160,9 +164,10 @@ def player_level_check(settings, player):
 		time.sleep(0.8)
 		print()
 		print('\n{} is now Level {}. Awesome!'.format(player.info['Name'], player.level), flush=True)
-		player.max_hp += 4  
+		player.max_hp += 4 
+		player.hp = player.max_hp # any issues here ?
 		time.sleep(0.8)
-		print('\nHP has been increased to {}'.format(player.max_hp))
+		print('\n{}\'s Maximum HP has been increased to {}'.format(player.info['Name'], player.max_hp))
 
 		press_enter()
 
@@ -189,23 +194,26 @@ def run_game(settings, player):
 
 			if player.created:
 				# we create the game grid object here, so that it's a brand new grid whenever option 2 (start game) is chosen
-				# BUT, if you want a new gamegrid object for each floor of dungeon, it probably shouldn't be here, right?
 				
+				# reset GameGrid *class* attribute to zero before creating a grid, otherwise it will keep incrementing on each game start
+				GameGrid.floor_level = 0
+
 				grid = GameGrid(settings, player)
 				game_log = GameLog(player, grid)
 
 				# this call to game_action effectively starts the running gameplay loop:
 				game_action(settings, player, grid, game_log) 
-				# note all the locations the arguments in game_action() call are being drawn from... they're all over the place!
-				# that's because of Python's weird scope rules.
-				# you'd think, logically / organizationally, that this function (run_game) could only pass objects that had
-				# already been passed to it. and yet....but read through it all again: dice is the only outlier!
+
 			else:
 				print('\nYou need to create a character first!')
 				press_enter()
 
-		elif user_action == 3 or user_action == 4:
+		elif user_action == 3:
 			print('\nSorry, that part of the game is still being developed.')
+			press_enter()
+
+		elif user_action == 4:
+			settings.print_settings()
 			press_enter()
 
 def movement_engine(settings, player, grid, selection):
@@ -231,7 +239,7 @@ def movement_engine(settings, player, grid, selection):
 
 	grid.all_room_grid[player.previous_coords[0]][player.previous_coords[1]]['Visited'] = True
 
-	return True
+	return True # happens after condition code for any above condition, except else as that has its own return.
 
 def determine_next_event(settings, player, grid, game_log, command):
 	"""determine event that should occur on entering Room, and trigger that event"""
@@ -267,7 +275,7 @@ def determine_next_event(settings, player, grid, game_log, command):
 		time.sleep(0.8)
 		exit_event(settings, player, grid, game_log) # useful at all to use an if exit_event() here and have it return bool ??
 
-	elif grid.current_room_type == 'Mystic' and grid.merchant_closed != True: # diff variable because behaves differently
+	elif grid.current_room_type == 'Mystic' and not grid.all_room_grid[player.player_location[0]][player.player_location[1]]['Mystic_Closed']:
 		slow_print_elipsis('This room', 'feels spooky...')
 		time.sleep(0.8)
 		mystic_event(settings, player, grid)
@@ -283,23 +291,103 @@ def determine_next_event(settings, player, grid, game_log, command):
 
 def treasure_event(settings, player):
 
-	if settings.difficulty == 1:
-		treasure_roll = randint(5, 8)
+	# review if / where you need press_enter() calls...
 
-	if settings.difficulty == 2 or settings.difficulty == 3:
-		treasure_roll = (randint(3, 10) + 3)
+	item_level = settings.difficulty	# used to determine quality of weapons / armor on call to their constructors
 
-	if settings.difficulty > 3:
-		treasure_roll = (randint(3, 12) + 5)
+	treasures = ['gold', 'gold', 'gold', 'potion', 'potion', 'weapon', 'weapon']
+
+	treasure_type = choice(treasures)
 
 	step_printer('OPENING CHEST...')
-	print('You found {} Gold Pieces inside!'.format(treasure_roll))
+	time.sleep(0.1)
 
-	player.gold += treasure_roll
+	if treasure_type == 'gold':
 
-	time.sleep(0.6)
-	print('{} GP +{}'.format(player.info['Name'], treasure_roll))
-	press_enter()
+		if settings.difficulty == 1:
+			treasure_roll = randint(4, 8)
+
+		elif settings.difficulty == 2 or settings.difficulty == 3:
+			treasure_roll = (randint(3, 10) + 3)
+
+		elif settings.difficulty > 3:
+			treasure_roll = (randint(3, 12) + 5)
+
+		print('\nYou found {} Gold Pieces inside!'.format(treasure_roll))
+
+		player.gold += treasure_roll
+
+		time.sleep(0.6)
+		print('\n{} GP +{}'.format(player.info['Name'], treasure_roll))
+		press_enter()
+
+	if treasure_type == 'potion':
+
+		elixir = battle_create_elixir(settings)
+		player.elixirs.append(elixir)
+
+		found = 'a {} Elixir!'.format(elixir['Type'])
+		found_more = '\n+1 {} Elixir to {}\'s inventory.'.format(elixir['Type'], player.info['Name'])
+
+		print('You found {}!'.format(found))
+		print(found_more)
+		press_enter()
+
+	if treasure_type == 'weapon':
+
+		wep_or_armor = randint(1,2)
+
+		if wep_or_armor == 1:
+
+			weapon = battle_create_weapon(settings, item_level)
+
+			if not weapon.bonus:
+				print('\nYou found a {}! It deals {} damage.'.format(weapon.name, weapon.damage_roll))
+			elif weapon.bonus:
+				print('\nYou found a {}! It deals {} damage and has a +{} bonus to {} rolls!'.format(weapon.name, weapon.damage_roll, weapon.bonus[1], weapon.bonus[0].title()))
+
+			time.sleep(0.8)
+			print('\nDo you want to drop your old {} and take the {}?'.format(player.weapon.name, weapon.name))
+
+			response = get_input_valid(key='yes_no')
+
+			if response == 'n':
+				print('Ok, you keep your trusty {}'.format(player.weapon.name))
+				press_enter()
+			elif response == 'y':
+				print('Great, you\'ve replaced your {} with the {}!'.format(player.weapon.name, weapon.name))
+
+				player.weapon = weapon #mutate the player object 
+				press_enter()
+
+		elif wep_or_armor == 2:
+			
+			armor = battle_create_armor(settings, item_level)
+
+			# this is just so the grammar of the strings below prints correctly, yepppp
+			names_one = ['Dirty Sweater', 'Gross T-Shirt', 'Clean Sweater', 'Magic Sweater']
+
+			if armor.name in names_one:
+				a_string = '\nYou found a {}! It has an AC of {}.'.format(armor.name, armor.armor_class)
+			else:
+				a_string = '\nYou found {} Armor! It has an AC of {}.'.format(armor.name, armor.armor_class)
+
+			print(a_string)
+			time.sleep(0.8)
+
+			print('\nDo you want to drop your {} and take the {}?'.format(player.armor.name, armor.name))
+
+			response_armor = get_input_valid(key='yes_no')
+
+			if response_armor == 'n':
+				print('Ok...I guess your {} must feel pretty comfy by now, eh?'.format(player.armor.name))
+				press_enter()
+			elif response_armor == 'y':
+				print('Great, you\'ve replaced your {} with the {}!'.format(player.armor.name, armor.name))
+
+				player.armor = armor #mutate the player object
+
+				press_enter()
 
 def mystic_event(settings, player, grid):
 	
@@ -334,13 +422,11 @@ def mystic_event(settings, player, grid):
 				print('\n{} Elixir has been added to your inventory!'.format(elixir['Type'].title()))
 				time.sleep(0.6)
 				print('{} gold pieces removed.'.format(elixir['Cost']))
-				time.sleep(0.6)
-				slow_print_elipsis('The Mystic begins to shimmer', '\nand disappears before your eyes!')
+				time.sleep(0.8)
+				slow_print_elipsis('\nThe Mystic begins to shimmer', '\nand disappears before your eyes!')
 
-				# purchasing an item closes the merchant for that floor. Might updated later so deeper
-				# floors can have more than one merchant, but for now, it's 1 per board and after a purchased, they
-				# are gone.
-				grid.merchant_closed = True
+				# close this mystic now that player has purchased something from him
+				grid.all_room_grid[player.player_location[0]][player.player_location[1]]['Mystic_Closed'] = True
 
 			elif response.startswith('y') and elixir['Cost'] > player.gold:
 				print('\nMYSTIC:\nI\'m sorry, but you currently cannot afford my wares.')
@@ -352,6 +438,37 @@ def mystic_event(settings, player, grid):
 
 			active = False
 			press_enter()
+
+def exit_event(settings, player, grid, game_log):
+	"""player chooses if they will descend to next level of the dungeon"""
+
+	print('You found the exit to the next level of the dungeon!')
+	time.sleep(0.8)
+	print('\nDo you want to go down the stairs now?')
+
+	response = get_input_valid(key='exit_room')
+
+	if response.startswith('y'):
+		grid.floor_exited = True
+		step_printer('DESCENDING......')
+		time.sleep(0.5)
+
+		# return True
+
+	else:
+		print('Ok, maybe next time...')
+		time.sleep(0.8)
+
+		# return False
+
+def battle_event(settings, player, grid, game_log):
+	# create a monster
+	monster = Monster(settings.difficulty)		# this is where the monster is created for battle. this is where we can call
+												# a function that scales monster difficulty in a less linear manner.
+
+	encounter_monster(settings, player, monster, grid, game_log)
+
+# define item creation / usage functions
 
 def create_random_elixir(settings):
 	"""create an elixir at random for each visit to a Mystic room. Scales with difficulty setting"""
@@ -387,29 +504,5 @@ def create_random_elixir(settings):
 	# NOTE: currently strength only applies to a health elixir, but perhaps I can work out how it effects
 	# berzerk as well, etc.
 
-def exit_event(settings, player, grid, game_log):
-	"""player chooses if they will descend to next level of the dungeon"""
 
-	print('You found the exit to the next level of the dungeon!')
-	time.sleep(0.08)
-	print('Do you want to go down the stairs now?')
 
-	response = get_input_valid(key='exit_room')
-
-	if response.startswith('y'):
-		grid.floor_exited = True
-		slow_print_elipsis('DESCENDING', '')
-		#time.sleep(0.6)
-
-		# return True
-
-	else:
-		print('Ok, maybe next time...')
-		time.sleep(0.8)
-
-		# return False
-
-def battle_event(settings, player, grid, game_log):
-	# create a monster
-	monster = Monster(settings.difficulty)
-	encounter_monster(player, monster, grid, game_log)
