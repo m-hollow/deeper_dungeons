@@ -326,8 +326,8 @@ def treasure_event(settings, player):
 		elixir = battle_create_elixir(settings)
 		player.elixirs.append(elixir)
 
-		found = 'a {} Elixir!'.format(elixir['Type'])
-		found_more = '\n+1 {} Elixir to {}\'s inventory.'.format(elixir['Type'], player.info['Name'])
+		found = 'a {} Elixir!'.format(elixir['Type'].title())
+		found_more = '\n+1 {} Elixir to {}\'s inventory.'.format(elixir['Type'].title(), player.info['Name'])
 
 		print('You found {}!'.format(found))
 		print(found_more)

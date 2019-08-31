@@ -178,7 +178,6 @@ def battle_header(player, monster, round_num):
 def check_battle_status(settings, player, monster, grid, crits):
 	"""checks state of player and monster to determine if battle is over, or should continue"""
 	
-	
 	# check if player used an escape elixir on this turn
 	if player.escaping == True:
 
@@ -237,74 +236,83 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 
 	command = attack_menu_input(player, monster, fight_mods, round_num)
 
-	# if applicable, fight_mods will be updated by this call
-	compute_attack_mods(player, monster, fight_mods, command, atype)
+	# it seems not great that I have to add this entire conditional indent just to check against player.escaping,
+	# which is hardly a common event (only applies to use of escape potion). but currently, doing so is the only
+	# way to bypass an attack roll on player's turn and skip forward to check_battle_status, where the escape usage
+	# will be processed. without this, player will use escape potion but then still have an attack roll occur
+	# before it gets processed.
 
-	weapon_bonus = 0	# default to zero, will update below if applicable weapon is used
+	if not player.escaping:
+		# if applicable, fight_mods will be updated by this call
+		compute_attack_mods(player, monster, fight_mods, command, atype)
 
-	# here is the actual attack die roll...
-	roll = player.dice.roll(20)
-	player.dice.print_roll()
-	
-	# check if roll is a critical hit
-	if roll == 20:
-		critical = 'CRITICAL HIT!'
-		step_printer(critical)
-		time.sleep(0.2)
+		weapon_bonus = 0	# default to zero, will update below if applicable weapon is used
 
-		print('\nThe {} has been destroyed by your perfectly placed strike!'.format(monster.name))
-		monster.hp = 0
-		crits['crit'] = True # used as flag to skip damage roll after critical hit
-		return True
-
-	# check if the weapon used has any built-in bonuses
-	if player.weapon.bonus:	# returns True if the list has any contents
-		if player.weapon.bonus[0] == 'Attack':
-			weapon_bonus = player.weapon.bonus[1]
-
-	# FLURRY ATTACK - additional mod printouts
-	if atype['attack'] == 'flurry' and not crits['crit']: # don't show mods on a critical hit
-		total = roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus
-
-		# print weapon bonus, if applicable
-		if weapon_bonus > 0:
-			time.sleep(0.6)
-			print('+{} ({} bonus)'.format(weapon_bonus, player.weapon.name))
-
-		time.sleep(0.6)
-		print('+{} ({})'.format(fight_mods['player_roll'], 'flurry bonus')) 
+		# here is the actual attack die roll...
+		roll = player.dice.roll(20)
+		player.dice.print_roll()
 		
-		if player.potion_mods['player_attack'] > 0:
+		# check if roll is a critical hit
+		if roll == 20:
+			critical = 'CRITICAL HIT!'
+			step_printer(critical)
+			time.sleep(0.2)
+
+			print('\nThe {} has been destroyed by your perfectly placed strike!'.format(monster.name))
+			monster.hp = 0
+			crits['crit'] = True # used as flag to skip damage roll after critical hit
+			return True
+
+		# check if the weapon used has any built-in bonuses
+		if player.weapon.bonus:	# returns True if the list has any contents
+			if player.weapon.bonus[0] == 'Attack':
+				weapon_bonus = player.weapon.bonus[1]
+
+		# FLURRY ATTACK - additional mod printouts
+		if atype['attack'] == 'flurry' and not crits['crit']: # don't show mods on a critical hit
+			total = roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus
+
+			# print weapon bonus, if applicable
+			if weapon_bonus > 0:
+				time.sleep(0.6)
+				print('+{} ({} bonus)'.format(weapon_bonus, player.weapon.name))
+
 			time.sleep(0.6)
-			print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
+			print('+{} ({})'.format(fight_mods['player_roll'], 'flurry bonus')) 
+			
+			if player.potion_mods['player_attack'] > 0:
+				time.sleep(0.6)
+				print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
 
-		time.sleep(0.6)
-		print('= {}'.format(total))
-
-	# FINESSE -OR- STANDARD ATTACKS - additional mod printouts
-	elif (atype['attack'] == 'finesse' or atype['attack'] == 'standard') and not crits['crit']:
-		total = roll + player.potion_mods['player_attack'] + weapon_bonus
-
-		if weapon_bonus > 0:
-			time.sleep(0.6)
-			print('+{} ({} bonus)'.format(weapon_bonus, player.weapon.name))
-
-		if player.potion_mods['player_attack'] > 0:
-			time.sleep(0.6)
-			print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
-
-		if weapon_bonus > 0 or player.potion_mods['player_attack'] > 0: # a non-modified roll doesn't need the '=' printout
 			time.sleep(0.6)
 			print('= {}'.format(total))
-		
-	# check if hit was successul or not
-	if roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus >= monster.armor_class + fight_mods['enemy_armor']:
-		print('You successfully hit the {} with your {}!'.format(monster.name, player.weapon.name))
-		return True
 
+		# FINESSE -OR- STANDARD ATTACKS - additional mod printouts
+		elif (atype['attack'] == 'finesse' or atype['attack'] == 'standard') and not crits['crit']:
+			total = roll + player.potion_mods['player_attack'] + weapon_bonus
+
+			if weapon_bonus > 0:
+				time.sleep(0.6)
+				print('+{} ({} bonus)'.format(weapon_bonus, player.weapon.name))
+
+			if player.potion_mods['player_attack'] > 0:
+				time.sleep(0.6)
+				print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
+
+			if weapon_bonus > 0 or player.potion_mods['player_attack'] > 0: # a non-modified roll doesn't need the '=' printout
+				time.sleep(0.6)
+				print('= {}'.format(total))
+			
+		# check if hit was successul or not
+		if roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus >= monster.armor_class + fight_mods['enemy_armor']:
+			print('You successfully hit the {} with your {}!'.format(monster.name, player.weapon.name))
+			return True
+
+		else:
+			print('Your attack missed the {}, dang!'.format(monster.name))
+			return False
 	else:
-		print('Your attack missed the {}, dang!'.format(monster.name))
-		return False
+		pass
 
 def attack_menu_input(player, monster, fight_mods, round_num):
 	"""gets player input for player attack in a battle"""
@@ -331,6 +339,9 @@ def attack_menu_input(player, monster, fight_mods, round_num):
 			print_battle_commands()
 		elif command == 'i':
 			player.show_inventory()
+			# if player used escape potion, we need to exit this loop now
+			if player.escaping == True:
+				active = False
 		elif command == 'b':
 			player.print_player_info()
 		elif command == 'm' or command == 'monster':
@@ -524,8 +535,8 @@ def monster_leaves_item(settings, player, monster):
 			elixir = battle_create_elixir(settings)
 			player.elixirs.append(elixir)
 
-			found = 'a {} Elixir!'.format(elixir['Type'])
-			found_more = '+1 {} Elixir to {}\'s inventory.'.format(elixir['Type'], player.info['Name'])
+			found = 'a {} Elixir!'.format(elixir['Type'].title())
+			found_more = '+1 {} Elixir to {}\'s inventory.'.format(elixir['Type'].title(), player.info['Name'])
 
 		if item_type == 'gold':
 

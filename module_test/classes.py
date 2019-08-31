@@ -483,7 +483,7 @@ class Player():
 				
 				# now we check if what they entered was q, if it was, we quit by ending the main loop ('active')
 				if response.lower() == 'q':
-					print('Cool. Saving \'em for later. Smart!')	
+					#print('Cool. Saving \'em for later. Smart!')	
 					active = False
 
 				# choice was not q, so it is string of an integer
@@ -568,20 +568,17 @@ class Monster():
 
 	def __init__(self, difficulty):
 		self.difficulty = difficulty 
-		self.name = self.get_monster_name()	# NOTE: also determines actual level if diff is > 1
-		
-		self.diff_string = self.get_diff_string()
-		
-		self.actual_level = 1 # modified depending on result of 
+		self.actual_level = 1 # will be modified depending on result of monster type
 
+		self.name = self.get_monster_name()	# NOTE: also determines actual level if diff is > 1
+		self.diff_string = self.get_diff_string()
 		self.dice = Dice()	# constructs a die object by calling Dice class
 
 		self.advantage = False	# determines who gets first attack, player or monster
 
 		self.damage_roll = self.get_damage_roll()
 		self.armor_class = self.get_armor_class()
-
-		self.hp = self.get_hit_points()		# gets HP depending on difficulty
+		self.hp = self.get_hit_points()		# gets HP depending on actual_level
 		
 	def get_armor_class(self):
 		if self.difficulty == 1:
