@@ -703,14 +703,14 @@ def battle_create_armor(settings, item_level):
 	diff_two = ['Studded Leather', 'Clean Sweater', 'Broken Plate']
 	diff_three = ['Blood Leather', 'Magic Sweater', 'Plate Mail']
 
-	if item.level == 1:
+	if item_level == 1:
 		armor_name = choice(diff_one)
 		if armor_name != 'Gross T-Shirt':
 			armor_ac = 8 + randint(0, 4)
 		else:
 			armor_ac = 1		# put an easter egg where player gets some bonus for wearing the gross t-shirt
 
-	elif item.level == 2:
+	elif item_level == 2:
 
 		z = randint(1, 3)
 
