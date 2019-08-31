@@ -322,9 +322,8 @@ class Player():
 		self.escaping = False
 
 		self.current_state = ''
-	    self.potion_mods = {'player_attack': 0, 'player_damage': 0}
-
 		self.info = {'Name':'None', 'Race':''}
+		self.potion_mods = {'player_attack': 0, 'player_damage': 0}
 
 		# starting values for player game attributes
 		self.name = self.info['Name']
@@ -434,15 +433,12 @@ class Player():
 		self.gold = 10
 		self.exp = 0
 		self.next_level_at = self.get_level_up_val()
-
-	    self.potion_mods = {'player_attack': 0, 'player_damage': 0}
-
 		self.current_state = ''
 
 		self.elixirs = []
 		self.weapon = Weapon('Dagger', 4)
 		self.armor = Armor('Leather', 10)
-
+		self.potion_mods = {'player_attack': 0, 'player_damage': 0}
 		self.dead = False
 		self.escaping = False
 
