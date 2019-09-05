@@ -69,7 +69,7 @@ def encounter_monster(settings, player, monster, grid, game_log):
 			if command.lower().startswith('f') or active:
 				# end the encounter loop and start the battle
 				active = False
-				battle_main(settings, player, monster, grid, run_failed)
+				battle_main(settings, player, monster, grid, game_log, run_failed)
 						
 def run_attempt(player, run_difficulty):
 	"""rolls player dice, prints out roll, returns True if roll beats run_dc, False otherwise"""
@@ -77,7 +77,7 @@ def run_attempt(player, run_difficulty):
 	player.dice.print_roll()
 	return (roll >= run_difficulty)		# returns a bool
 
-def battle_main(settings, player, monster, grid, run_failed):
+def battle_main(settings, player, monster, grid, game_log, run_failed):
 
 	player.current_state = 'battle'
 
@@ -119,7 +119,7 @@ def battle_main(settings, player, monster, grid, run_failed):
 			player_turn = True
 
 		# status check on both player and monster
-		if check_battle_status(settings, player, monster, grid, crits):
+		if check_battle_status(settings, player, monster, grid, game_log, crits):
 			active = False	# player or monster is dead, so end the battle loop.
 
 		# run updates if the battle is still going
@@ -175,7 +175,7 @@ def battle_header(player, monster, round_num):
 	print('{: <12} \t HP: {: <3} AC: {: <3}'.format(monster.name.upper(), monster.hp, monster.armor_class))
 	print()
 
-def check_battle_status(settings, player, monster, grid, crits):
+def check_battle_status(settings, player, monster, grid, game_log, crits):
 	"""checks state of player and monster to determine if battle is over, or should continue"""
 	
 	# check if player used an escape elixir on this turn
@@ -268,7 +268,7 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 			if player.weapon.bonus[0] == 'Attack':
 				weapon_bonus = player.weapon.bonus[1]
 
-		# FLURRY ATTACK - additional mod printouts
+		# FLURRY ATTACK - additional attack mod printouts
 		if atype['attack'] == 'flurry' and not crits['crit']: # don't show mods on a critical hit
 			total = roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus
 
@@ -287,8 +287,9 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 			time.sleep(0.6)
 			print('= {}'.format(total))
 
-		# FINESSE -OR- STANDARD ATTACKS - additional mod printouts
-		elif (atype['attack'] == 'finesse' or atype['attack'] == 'standard') and not crits['crit']:
+		# FINESSE, HEADSHOT -OR- STANDARD ATTACKS - additional mod printouts 
+		# in these cases, THERE IS NO PLAYER ATTACK MOD TO PRINT - the attack styles modified enemy AC, not player roll
+		elif (atype['attack'] == 'finesse' or atype['attack'] == 'standard' or atype['attack'] == 'headshot') and not crits['crit']:
 			total = roll + player.potion_mods['player_attack'] + weapon_bonus
 
 			if weapon_bonus > 0:

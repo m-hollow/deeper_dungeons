@@ -474,7 +474,7 @@ def create_random_elixir(settings):
 	"""create an elixir at random for each visit to a Mystic room. Scales with difficulty setting"""
 
 	elixir = {}	
-	elixir_types = ['health', 'health', 'health', 'berzerk', 'escape'] # 3x health so that it's more likely a choice.
+	elixir_types = ['health', 'health', 'health', 'berzerk', 'escape', 'health max'] # 3x health so that it's more likely a choice.
 	
 	chosen_elixir = choice(elixir_types)
 
@@ -492,6 +492,8 @@ def create_random_elixir(settings):
 	elif chosen_elixir == 'berzerk':
 		cost = 10
 	elif chosen_elixir == 'escape':
+		cost = 15
+	elif chosen_elixir == 'health max':
 		cost = 15
 
 	# build the elixir dictionary. remember, if indexed key doesn't exist in dicionary, it gets added to it!

@@ -56,7 +56,7 @@ class GameGrid():
 		self.all_room_grid = self.generate_rooms()  # grid for room data, containing room dictionaries
 
 		self.create_start() # same as below, adds start on construction
-		self.create_exit()	# doesn't need to return anything, just adds the exit on construction
+		self.create_exit_johnfix()	# doesn't need to return anything, just adds the exit on construction
 		self.create_mystic() # number of mystics = floor level, perhaps give it a +1 as well (after floor one)
 		
 		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] 
@@ -157,6 +157,30 @@ class GameGrid():
 				active = False
 			else:
 				pass
+
+	def create_exit_johnfix(self):
+		"""versions that calls John's exit fix"""
+
+		grid_size = self.settings.grid_size
+		playerPos = self.player.player_location
+		minimumRadiusDistance = 3
+
+		coords = self.getValidPosition(grid_size, playerPos, minimumRadiusDistance) # looks like three arguments to me!
+
+		self.all_room_grid[coords[0]][coords[1]]['Type'] = 'Exit'	
+
+	def getValidPosition(self, grid_size, playerPos, minimumRadiusDistance):
+		""" John's exit fix solution"""
+		x = randint(0, grid_size-1)
+		minY = 0
+
+		if abs(x - playerPos[0]) < minimumRadiusDistance:
+			minY = playerPos[1] + minimumRadiusDistance
+
+		y = randint(minY, grid_size-1)
+
+		return [x, y]
+
 
 	def create_mystic(self):
 
@@ -337,7 +361,7 @@ class Player():
 		self.dice = Dice()
 
 		# player items
-		self.elixirs = []
+		self.elixirs = [{'Type': 'escape', 'Strength': 1, 'Cost': 15},{'Type': 'health max', 'Strength': 1, 'Cost': 15},{'Type': 'berzerk', 'Strength': 1, 'Cost': 10},]
 		self.items = ['Torch',]
 		self.weapon = Weapon('Dagger', 4)
 		self.armor = Armor('Warm Sweater', 9)
@@ -448,6 +472,7 @@ class Player():
 		response = ''
 		current_max = len(self.elixirs)
 		active = True
+		quitting = False
 
 		while active:
 
@@ -485,6 +510,7 @@ class Player():
 				if response.lower() == 'q':
 					#print('Cool. Saving \'em for later. Smart!')	
 					active = False
+					quitting = True
 
 				# choice was not q, so it is string of an integer
 				else: 
@@ -556,12 +582,16 @@ class Player():
 							del self.elixirs[response_int]
 
 							self.escaping = True
+							active = False
 
 			else: # player pressed p for potions but has none in their inventory at this time
 				print('You do not have any Elixirs to use at this time, try to find some!')
 				active = False
 
-			press_enter()
+			# you originally, mistakenly, used an OR here and caused yourself much confusion. remember, OR means
+			# 'the code block will execute if any ONE of these is true'
+			if not quitting and not self.escaping: 
+				press_enter()
 
 class Monster():
 	"""Generate a monster object for battle sequences, diff parameter determines difficulty"""
