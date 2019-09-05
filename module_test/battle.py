@@ -121,6 +121,10 @@ def battle_main(settings, player, monster, grid, game_log, run_failed):
 		# status check on both player and monster
 		if check_battle_status(settings, player, monster, grid, game_log, crits):
 			active = False	# player or monster is dead, so end the battle loop.
+			#potion_mods is a player class attribute, so we need to reset it after battle ends or player enters next
+			# battle with the mods still in place!
+			player.potion_mods['player_attack'] = 0
+			player.potion_mods['player_damage'] = 0
 
 		# run updates if the battle is still going
 		if active:

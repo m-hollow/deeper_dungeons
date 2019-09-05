@@ -9,6 +9,3 @@ player = Player(settings)
 # call the main run_game function loop
 
 run_game(settings, player)
-
-
-
