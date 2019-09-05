@@ -359,9 +359,11 @@ class Player():
 		self.next_level_at = self.get_level_up_val()  # determined on creation of player object
 
 		self.dice = Dice()
-
+		
 		# player items
-		self.elixirs = [{'Type': 'escape', 'Strength': 1, 'Cost': 15},{'Type': 'health max', 'Strength': 1, 'Cost': 15},{'Type': 'berzerk', 'Strength': 1, 'Cost': 10},]
+		self.elixirs = []
+		# this is just for playtesting, having player start with a bunch of potions
+		#self.elixirs = [{'Type': 'escape', 'Strength': 1, 'Cost': 15},{'Type': 'health max', 'Strength': 1, 'Cost': 15},{'Type': 'berzerk', 'Strength': 1, 'Cost': 10},]
 		self.items = ['Torch',]
 		self.weapon = Weapon('Dagger', 4)
 		self.armor = Armor('Warm Sweater', 9)
