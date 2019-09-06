@@ -177,7 +177,12 @@ class GameGrid():
 		if abs(x - playerPos[0]) < minimumRadiusDistance:
 			minY = playerPos[1] + minimumRadiusDistance
 
-		y = randint(minY, grid_size-1)
+		try:
+			y = randint(minY, grid_size-1)
+		except:
+			print("Caught Exception in getValidPosition: failed to get y from randint(minY, grid_size-1) with minY: {0} and grid_size:{1})".format(minY, grid_size))
+			print("Function arguments received: grid_size: {0}, playerPos: [ {1} , {2} ], minimumRadiusDistance: {3}".format(grid_size, playerPos[0], playerPos[1], minimumRadiusDistance))
+			quit()
 
 		return [x, y]
 
