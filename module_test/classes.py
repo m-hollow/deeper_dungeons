@@ -169,18 +169,46 @@ class GameGrid():
 
 		self.all_room_grid[coords[0]][coords[1]]['Type'] = 'Exit'	
 
+	@staticmethod
+	def getValidYPositions(playerPos, grid_size, minimumRadiusDistance):
+		validYPositions = []
+		if (playerPos[1] > minimumRadiusDistance):
+			validYPositions += range(0, playerPos[1] - minimumRadiusDistance)
+		if (playerPos[1] + minimumRadiusDistance < grid_size-1): 
+			validYPositions += range(playerPos[1] + minimumRadiusDistance, grid_size-1)
+
+		return validYPositions
+
 	def getValidPosition(self, grid_size, playerPos, minimumRadiusDistance):
-		""" John's exit fix solution"""
-		x = randint(0, grid_size-1)
-		minY = 0
-
-		if abs(x - playerPos[0]) < minimumRadiusDistance:
-			minY = playerPos[1] + minimumRadiusDistance
-
+		""" John's (new) exit fix solution"""
+		bDebugOutput = False
 		try:
-			y = randint(minY, grid_size-1)
-		except:
-			print("Caught Exception in getValidPosition: failed to get y from randint(minY, grid_size-1) with minY: {0} and grid_size:{1})".format(minY, grid_size))
+			x = randint(0, grid_size-1)
+
+			# If we end up with an x within vertical range of the player...
+			if abs(x - playerPos[0]) < minimumRadiusDistance:
+				# Pick a valid value from the range of possible values
+				validYPositions = GameGrid.getValidYPositions(playerPos, grid_size, minimumRadiusDistance)
+				
+				# If there were none found (ie, our minimum radius does not allow for a position in every 
+				# slot for a grid size, winnow the radius until we can place it.
+				while (len(validYPositions) == 0):
+					minimumRadiusDistance -= 1
+					validYPositions = GameGrid.getValidYPositions(playerPos, grid_size, minimumRadiusDistance)
+					if (bDebugOutput):
+						print("NOTICE: Amended minimumRadiusDistance to {0} due to player Y pos of {1} and grid_size of {2}".format(minimumRadiusDistance, playerPos[1], grid_size))
+
+					# We should really only hit this if we ask for a grid which is 1x1 or smaller...
+					if (minimumRadiusDistance == 0):
+						print("Fatal Error: No valid Y values found for player at ({0}, {1}) on a {2}x{2} grid with x of {3} and minimum radius distance of {4}".format(playerPos[0], playerPos[1], grid_size, x, minimumRadiusDistance))
+						quit()
+				
+				y = validYPositions[randint(0, len(validYPositions)-1)]
+			else:
+				# Otherwise, just pick any old y.
+				y = randint(0, grid_size-1)
+		except Exception as e:
+			print("\nCaught Exception in getValidPosition: ", e)
 			print("Function arguments received: grid_size: {0}, playerPos: [ {1} , {2} ], minimumRadiusDistance: {3}".format(grid_size, playerPos[0], playerPos[1], minimumRadiusDistance))
 			quit()
 
