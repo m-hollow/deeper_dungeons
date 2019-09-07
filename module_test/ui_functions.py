@@ -55,14 +55,14 @@ def command_menu(player):
 	"""prints the command menu for the player"""
 	clear_screen()
 
-	print('#{:^33}#'.format(player.info['Name'].upper() + '\'s COMMANDS'))
+	print('#{:^34}#'.format(player.info['Name'].upper() + '\'s COMMANDS'))
 	print()
-	print('MOVE: North  DO:  Rest   GAME: Save')
-	print('      South       Item         Quit')
-	print('      East        Bio')
-	print('      West')
-	print()
-	print()
+	print('MOVE: North  VIEW:  Bio   GAME: Save')
+	print('      South         Item        Quit')          
+	print('      East')        							 
+	print('      West')									 
+	print()								 
+	print('\n')
 	print('Type the first letter of a command') 
 	print('at the game prompt (>).')
 
@@ -133,7 +133,7 @@ def get_possible_choices(key):
 	#possible_choices = []
 
 	if key == 'standard':
-		possible_choices = ['n','s','e','w','i','b','c','d','q']
+		possible_choices = ['n','s','e','w','i','b','c','d','q', 'help']
 	elif key == 'battle':
 		possible_choices = ['strike','headshot','s','h','i','b','m','monster']
 		possible_choices += ['finesse','fin','flurry','flu', 'help']
