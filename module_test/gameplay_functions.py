@@ -2,11 +2,45 @@ import time
 from random import randint, choice
 import copy
 
+import pickle
+
 from ui_functions import *
 from classes import *
 from battle import *
 
 # define main 'game in play' functions
+
+def save_game(settings, player, grid, game_log):
+	"""function to save the game state by creating gamestate object"""
+
+	clear_screen()
+
+	print('Would you like to save your current progress?\tYes | No\n')
+
+	response = get_input_valid(key='yes_no')
+
+	if response.startswith('y'):
+
+		step_printer('SAVING PROGRESS......')
+
+		settings.game_saved = True # this doesn't work. on game load, settings is created and defaults to False. 
+									# this stored state of True won't have been loaded and seen, because the file isn't loaded yet.
+
+		user_saved_game = [settings, player, grid, game_log]
+
+		filename = 'game_state.pickle'
+		with open(filename, 'wb') as file_object:		# write binary
+			pickle.dump(user_saved_game, file_object)
+
+		print()
+		print('\nYour game progress has been successfully saved.')
+		print('You can load your game from the main menu.')
+
+		press_enter()
+
+	else:
+		print('OK, good luck out there!')
+		press_enter()
 
 def action_menu(game_log):
 	"""print the game_log, the map, the command menu, take user input, and return user choice"""
@@ -16,7 +50,7 @@ def action_menu(game_log):
 							# if you want to create loops that keep header active, you'll either need to figure out
 							# how and where to move this, or call it more than once.
 	
-	possible_choices = ['n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'settings', 'help', 'h', 'rest']
+	possible_choices = ['n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'save', 'settings', 'help', 'h', 'rest']
 	
 	command = get_player_input().lower()
 
@@ -76,6 +110,10 @@ def game_action(settings, player, grid, game_log):
 		elif command == 'r' or command == 'rest':
 			print('You\'re kidding, right? This is a DUNGEON. Hardly the place for a nap!')
 			press_enter()
+
+		elif command == 'save':
+			save_game(settings, player, grid, game_log)
+			#press_enter()
 
 		elif command == 'settings':
 			"""show the current settings; this is purely for dev purposes"""
@@ -209,8 +247,30 @@ def run_game(settings, player):
 				press_enter()
 
 		elif user_action == 3:
-			print('\nSorry, that part of the game is still being developed.')
-			press_enter()
+
+			# need to make this look at actual OS folder to see if the .pickle file exists, if yes, proceed, if no, run below.
+			# see automate boring stuff chapter on files, import os, etc: accessing os from python code.
+
+			# if not settings.game_saved:
+			# 	print('There is no game save file to load at this time.')
+			# 	press_enter()
+
+			# else:
+			# 	step_printer('LOADING SAVED GAME......')
+
+			# 	filename = 'game_state.pickle'
+			# 	with open(filename) as file_object:
+			# 		user_saved_game = pickle.load(file_object)
+
+			# 	game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3])
+
+			step_printer('LOADING SAVED GAME......')
+
+			filename = 'game_state.pickle'
+			with open(filename, 'rb') as file_object:
+				user_saved_game = pickle.load(file_object)
+
+			game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3])
 
 		elif user_action == 4:
 			settings.print_settings()

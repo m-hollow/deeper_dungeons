@@ -12,6 +12,7 @@ class GameSettings():
 		self.grid_size = 5
 		self.starting_gold = 10
 		self.difficulty = 1
+		self.game_saved = False
 
 	def user_settings_change(self):
 
@@ -263,7 +264,7 @@ class GameGrid():
 	def print_grid(self):
 		"""print the visual game grid"""
 		
-		print('\nLV.{}'.format(self.floor_level))	# will find the class attribute floor_level after looking at instance attributes.
+		print('\nLV.{}'.format(self.floor_chrono))	# will find the class attribute floor_level after looking at instance attributes.
 
 		for r in self.grid_matrix:
 			for c in r:
@@ -911,3 +912,12 @@ class MainMenu():
 				return int(choice) # is active = False redundant since the return will exit the loop and function?
 			else:
 				print('That\'s not one of the menu options!')
+
+class GameState():
+	"""gamestate object for saving and loading game"""
+
+	def __init__(self, settings, player, grid):
+		self.settings = settings
+		self.player = player
+		self.grid = grid
+

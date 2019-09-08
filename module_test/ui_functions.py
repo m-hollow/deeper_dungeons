@@ -133,7 +133,7 @@ def get_possible_choices(key):
 	#possible_choices = []
 
 	if key == 'standard':
-		possible_choices = ['n','s','e','w','i','b','c','d','q', 'help']
+		possible_choices = ['n','s','e','w','i','b','c','d','q', 'help', 'save']
 	elif key == 'battle':
 		possible_choices = ['strike','headshot','s','h','i','b','m','monster']
 		possible_choices += ['finesse','fin','flurry','flu', 'help']
