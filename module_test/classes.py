@@ -429,12 +429,12 @@ class Player():
 
 		step_printer('BUILDING CHARACTER...\n', 0.03)
 		print('\nYou have successfully created {} the {}.'.format(a.title(), b.title()))
-		time.sleep(0.8)
+		time.sleep(0.5)
 		print('\nYou will begin with {} Hit Points and {} Gold Pieces.'.format(self.hp, self.gold))
-		time.sleep(0.8)
+		time.sleep(0.5)
 		print('\nYou are now ready to start the game!')
 		print('\n')
-		time.sleep(0.8)
+		time.sleep(0.5)
 		print('Getting Help:') 
 		print('Type \'help\' (or just \'h\') at any time to view a list of all commands.')
 
