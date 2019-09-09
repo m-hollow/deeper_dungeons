@@ -1,6 +1,7 @@
 import time
 from random import randint, choice
 import copy
+import os
 
 import pickle
 
@@ -14,7 +15,6 @@ def save_game(settings, player, grid, game_log):
 	"""function to save the game state by creating gamestate object"""
 
 	clear_screen()
-
 	print('Would you like to save your current progress?\tYes | No\n')
 
 	response = get_input_valid(key='yes_no')
@@ -22,9 +22,6 @@ def save_game(settings, player, grid, game_log):
 	if response.startswith('y'):
 
 		step_printer('SAVING PROGRESS......')
-
-		settings.game_saved = True # this doesn't work. on game load, settings is created and defaults to False. 
-									# this stored state of True won't have been loaded and seen, because the file isn't loaded yet.
 
 		user_saved_game = [settings, player, grid, game_log]
 
@@ -248,29 +245,21 @@ def run_game(settings, player):
 
 		elif user_action == 3:
 
-			# need to make this look at actual OS folder to see if the .pickle file exists, if yes, proceed, if no, run below.
-			# see automate boring stuff chapter on files, import os, etc: accessing os from python code.
+			path = './game_state.pickle'
 
-			# if not settings.game_saved:
-			# 	print('There is no game save file to load at this time.')
-			# 	press_enter()
+			if os.path.isfile(path):
 
-			# else:
-			# 	step_printer('LOADING SAVED GAME......')
+				step_printer('LOADING SAVED GAME......')
 
-			# 	filename = 'game_state.pickle'
-			# 	with open(filename) as file_object:
-			# 		user_saved_game = pickle.load(file_object)
+				filename = 'game_state.pickle'
+				with open(filename, 'rb') as file_object:
+					user_saved_game = pickle.load(file_object)	# the stored object is a list containing 4 class object instances
 
-			# 	game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3])
+				game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3])
 
-			step_printer('LOADING SAVED GAME......')
-
-			filename = 'game_state.pickle'
-			with open(filename, 'rb') as file_object:
-				user_saved_game = pickle.load(file_object)
-
-			game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3])
+			else:
+				print('There is no available game file to load!')
+				press_enter()
 
 		elif user_action == 4:
 			settings.print_settings()
