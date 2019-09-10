@@ -23,6 +23,8 @@ def save_game(settings, player, grid, game_log):
 
 		step_printer('SAVING PROGRESS......')
 
+		#dungeon_floor = grid.floor_chrono
+
 		user_saved_game = [settings, player, grid, game_log]
 
 		filename = 'game_state.pickle'
@@ -47,7 +49,7 @@ def action_menu(game_log):
 							# if you want to create loops that keep header active, you'll either need to figure out
 							# how and where to move this, or call it more than once.
 	
-	possible_choices = ['n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'save', 'settings', 'help', 'h', 'rest']
+	possible_choices = ['n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'save', 'settings', 'help', 'h', 'rest', 'map', 'quit']
 	
 	command = get_player_input().lower()
 
@@ -67,10 +69,19 @@ def action_menu(game_log):
 	# the gamelog again, and calls get_player_input. This mean the "successive printing down screen" effect is
 	# avoided, because the screen is being -cleared and reprinted- *after the invalid input* event happens.
 
-def game_action(settings, player, grid, game_log):
+def game_action(settings, player, grid, game_log, gamestate_dict):
 
 	grid.update_player_location() # needs to happen here initially so the X gets printed to board
 	game_log.update_log() # same, needs to happen so its attributes are not in initial state 'None'
+
+	if gamestate_dict['Reload']:
+		this_floor_level = grid.floor_chrono
+		GameGrid.floor_level = this_floor_level
+
+		# set it back to false so the above doesn't get triggered every time, but rather only after a 
+		# game reload (code to set Reload to true is in the block where the pickle state is loaded).
+		gamestate_dict['Reload'] = False
+
 
 	active = True
 	
@@ -116,9 +127,16 @@ def game_action(settings, player, grid, game_log):
 			"""show the current settings; this is purely for dev purposes"""
 			settings.print_settings()
 
-		elif command == 'q':
+		elif command == 'map':
+			if not grid.map_found:
+				print('You don\'t have a map for this floor, sorry.')
+				press_enter()
+			else:
+				grid.show_map()
+
+		elif command == 'q' or command == 'quit':
 			print('Returning to Main Menu...')
-			time.sleep(0.08)
+			time.sleep(0.5)
 			player.reset_player()	#reset player so new game starts fresh, attributes back to initials
 			settings.reset_settings()
 			active = False
@@ -133,6 +151,11 @@ def game_action(settings, player, grid, game_log):
 				player.reset_player() # *must* happen after the settings reset!
 				
 			if grid.floor_exited:	# flag for player finding exit and choosing to use it during this turn (in exit event)
+				
+				# remove floor map from player items, if necessary
+				if grid.map_found:
+					player.items.remove('Floor Map')
+
 				grid = make_next_floor(settings, player, game_log) # successfully updates the primary grid object, because this
 																   # object created here is the one getting passed around for use!
 				game_log = make_next_gamelog(game_log, grid, player)
@@ -173,19 +196,16 @@ def check_player_status(settings, player): # seems we don't actually need settin
 	if player.hp <= 0:
 		player.dead = True
 		
-		#print('\nOh damn! Looks like {} has been defeated!'.format(player.info['Name']))
-		#time.sleep(0.6)
 		you_are_dead(player)
 
 		return True
 
-	# check if player has levelled up... surely this needs to be its own function, and probably a method of
-	# the player class...
+	# check if player has leveled up... 
 
 	if not player.dead:
 		player_level_check(settings, player)
 		
-	return False
+	return False 
 
 def player_level_check(settings, player):
 	"""checks if player can level up at end of each turn, and performs level up when applicable"""
@@ -209,6 +229,8 @@ def player_level_check(settings, player):
 def run_game(settings, player):	
 	"""prints Main Menu and takes user input"""
 
+	gamestate_dict = {'Reload': False}
+
 	active = True
 
 	while active: #main event loop of program running (but game not in play)
@@ -223,7 +245,7 @@ def run_game(settings, player):
 		elif user_action == 1:
 
 			player.build_player()
-			player.created = True
+			#player.created = True  handled now internally in the player class method build_player()
 
 		elif user_action == 2:
 
@@ -237,7 +259,7 @@ def run_game(settings, player):
 				game_log = GameLog(player, grid)
 
 				# this call to game_action effectively starts the running gameplay loop:
-				game_action(settings, player, grid, game_log) 
+				game_action(settings, player, grid, game_log, gamestate_dict) 
 
 			else:
 				print('\nYou need to create a character first!')
@@ -255,7 +277,12 @@ def run_game(settings, player):
 				with open(filename, 'rb') as file_object:
 					user_saved_game = pickle.load(file_object)	# the stored object is a list containing 4 class object instances
 
-				game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3])
+				# flag for modifying grid class attribute *after* call to game_action below
+				# (though I still feel like I should be able to do this before the call...but when I did it here
+				# first, it didn't work...?
+				gamestate_dict['Reload'] = True
+
+				game_action(user_saved_game[0], user_saved_game[1], user_saved_game[2], user_saved_game[3], gamestate_dict)
 
 			else:
 				print('There is no available game file to load!')
@@ -311,9 +338,34 @@ def determine_next_event(settings, player, grid, game_log, command):
 
 	slow_print_elipsis(move_text, '', 4)
 
+	# its VERY inefficient to check map status EVERY TIME an empty room is entered.
+	# this was my lazy way of adding 'find a map' functionality. it's obviously janky and not ideal.
 	if grid.current_room_type == 'Empty' and grid.room_status != True: # bypass print for already visited rooms.
-		slow_print_elipsis('This room', 'is EMPTY.')
-		time.sleep(0.8)
+		
+		if not grid.map_found:
+			chance_of_map = randint(1,20)
+			if chance_of_map > 12:
+
+				slow_print_elipsis('This room', 'has a MAP in it!')
+				time.sleep(0.8)
+				print('\nYou found the MAP for this floor!')
+				time.sleep(0.5)
+				print('You can now type \'map\' at the prompt to view it.')
+
+				grid.map_found = True
+				map_string = 'Floor Map'
+				player.items.append(map_string)
+
+				press_enter()
+
+			else:
+				slow_print_elipsis('This room', 'is EMPTY.')
+				time.sleep(0.8)
+
+		else:
+			slow_print_elipsis('This room', 'is EMPTY.')
+			time.sleep(0.8)
+
 	elif grid.current_room_type == 'Treasure' and grid.room_status != True:
 		slow_print_elipsis('This room', 'has a TREASURE chest!')
 		time.sleep(0.8)
@@ -400,10 +452,10 @@ def treasure_event(settings, player):
 
 			response = get_input_valid(key='yes_no')
 
-			if response == 'n':
+			if response == 'n' or response == 'no':
 				print('Ok, you keep your trusty {}'.format(player.weapon.name))
 				press_enter()
-			elif response == 'y':
+			elif response == 'y' or response == 'yes':
 				print('Great, you\'ve replaced your {} with the {}!'.format(player.weapon.name, weapon.name))
 
 				player.weapon = weapon #mutate the player object 
@@ -426,12 +478,13 @@ def treasure_event(settings, player):
 
 			print('\nDo you want to drop your {} and take the {}?'.format(player.armor.name, armor.name))
 
+			# THIS one uses the external input validation check, unlike all the other versions of this....
 			response_armor = get_input_valid(key='yes_no')
 
-			if response_armor == 'n':
+			if response_armor == 'n' or response_armor == 'no':
 				print('Ok...I guess your {} must feel pretty comfy by now, eh?'.format(player.armor.name))
 				press_enter()
-			elif response_armor == 'y':
+			elif response_armor == 'y' or response_armor == 'yes':
 				print('Great, you\'ve replaced your {} with the {}!'.format(player.armor.name, armor.name))
 
 				player.armor = armor #mutate the player object

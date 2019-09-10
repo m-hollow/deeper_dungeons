@@ -583,9 +583,9 @@ def monster_leaves_item(settings, player, monster):
 
 				response = get_input_valid(key='yes_no')
 
-				if response == 'n':
+				if response == 'n' or response == 'no':
 					print('Ok, you keep your trusty {}'.format(player.weapon.name))
-				elif response == 'y':
+				elif response == 'y' or response == 'yes':
 					print('Great, you\'ve replaced your {} with the {}!'.format(player.weapon.name, weapon.name))
 
 					player.weapon = weapon
@@ -615,9 +615,9 @@ def monster_leaves_item(settings, player, monster):
 
 				response_armor = get_input_valid(key='yes_no')
 
-				if response_armor == 'n':
+				if response_armor == 'n' or response_armor == 'no':
 					print('\nOk...I guess your {} must feel pretty comfy by now, eh?'.format(player.armor.name))
-				elif response_armor == 'y':
+				elif response_armor == 'y' or response_armor == 'yes':
 					print('\nGreat, you\'ve replaced your {} with the {}!'.format(player.armor.name, armor.name))
 
 					player.armor = armor #mutate the player object
@@ -688,7 +688,7 @@ def battle_create_weapon(settings, item_level):
 			weapon_name = choice(difficulty_two)
 			weapon_dam = choice([6,8,10])
 
-	elif item_level == 3:
+	elif item_level >= 3:
 		x = randint(1, 9)
 		if x == 1 or x == 2:
 			weapon_name = choice(difficulty_one)
@@ -741,7 +741,7 @@ def battle_create_armor(settings, item_level):
 			armor_name = choice(diff_two)
 			armor_ac = 10 + randint(0, 3)
 
-	elif item_level == 3:
+	elif item_level >= 3:
 
 		z = randint(1, 9)
 

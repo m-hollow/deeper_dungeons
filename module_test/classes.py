@@ -12,7 +12,6 @@ class GameSettings():
 		self.grid_size = 5
 		self.starting_gold = 10
 		self.difficulty = 1
-		self.game_saved = False
 
 	def user_settings_change(self):
 
@@ -52,6 +51,7 @@ class GameGrid():
 		self.col = self.settings.grid_size
 
 		self.floor_exited = False
+		self.map_found = False
 
 		self.grid_matrix = self.make_grid()			# grid for graphics, containing strings '*'
 		self.all_room_grid = self.generate_rooms()  # grid for room data, containing room dictionaries
@@ -215,7 +215,6 @@ class GameGrid():
 
 		return [x, y]
 
-
 	def create_mystic(self):
 
 		# create as many mystics as = the level of the dungeon
@@ -312,6 +311,54 @@ class GameGrid():
 			for val in row:
 				print(val, end = '')
 			print()
+
+		press_enter()
+
+	def show_map(self):
+		
+		clear_screen()
+
+		print('#  FLOOR {} MAP  #'.format(self.floor_chrono))
+		print()
+
+		r = 0
+
+		map_copy = copy.deepcopy(self.grid_matrix)
+
+		# modify chars in the deepcopy based on corresponding roomtype in original all_room_grid
+		# incrementing variables r, c used to index (and thereby modify) contents of deepcopy grid
+		for row in self.all_room_grid:
+			c = 0
+			for col in row:
+				if col['Type'] == 'Empty':				 
+					map_copy[r][c] = ' * '		
+				elif col['Type'] == 'Monster':			
+					map_copy[r][c] = ' * '
+				elif col['Type'] == 'Treasure':
+					map_copy[r][c] = ' T '
+				elif col['Type'] == 'Exit':
+					map_copy[r][c] = ' S '
+				elif col['Type'] == 'Start':
+					map_copy[r][c] = ' * '
+				elif col['Type'] == 'Mystic':
+					map_copy[r][c] = ' M '
+
+				c += 1
+			r += 1
+
+		map_copy[self.player.player_location[0]][self.player.player_location[1]] = ' X '
+
+		# print the dev grid
+		for row in map_copy:
+			for val in row:
+				print(val, end = '')
+			print()
+
+		print('\n')
+		print('X\t\t{}'.format(self.player.info['Name']))
+		print('T\t\tTreasure')
+		print('M\t\tMystic Merchant')
+		print('S\t\tStairs to next floor')
 
 		press_enter()
 
@@ -438,6 +485,7 @@ class Player():
 		print('Getting Help:') 
 		print('Type \'help\' (or just \'h\') at any time to view a list of all commands.')
 
+		self.created = True
 		press_enter()
 
 	def print_player_info(self):
@@ -464,7 +512,8 @@ class Player():
 		print("#      INVENTORY      #\n")   #23 spaces used here
 		print("Weapon{:.>17}".format(self.weapon.name + self.weapon.icon))
 		print("Armor{:.>18}".format(self.armor.name))
-		print("Items{:.>18}".format(self.items[0])) # how to show all list items here ?
+		print("Items{:.>18}".format(self.items[0])) # can't figure out how to print all items here in one line of code
+
 		print()
 		print("#       ELIXIRS       #\n")
 		
@@ -883,6 +932,7 @@ class GameLog():
 
 		return room_dict_b
 
+# I think this isn't been used at all anymore, double check and remove.
 class MainMenu():
 	"""Display menu and receive input for user choice"""
 
@@ -920,4 +970,11 @@ class GameState():
 		self.settings = settings
 		self.player = player
 		self.grid = grid
+
+
+
+
+
+
+
 
