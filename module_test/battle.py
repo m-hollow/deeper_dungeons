@@ -11,13 +11,16 @@ def encounter_monster(settings, player, monster, grid, game_log):
 	clear_screen()
 
 	# determine how difficult it is for player to run away successfully
-	run_difficulty = int(randint(2,10) + (3 * monster.difficulty))
+	run_difficulty = int(randint(2,10) + (2 * monster.difficulty))
+
+	if run_difficulty > 18:
+		run_difficulty = 18
 
 	run_failed = False
 
 	active = True
-	
-	# step print encounter text	
+
+	# step print encounter text
 	slow_print_elipsis('You have encountered a', monster.name.upper())
 
 	print('Run Difficulty: {}'.format(run_difficulty))
@@ -70,7 +73,7 @@ def encounter_monster(settings, player, monster, grid, game_log):
 				# end the encounter loop and start the battle
 				active = False
 				battle_main(settings, player, monster, grid, game_log, run_failed)
-						
+
 def run_attempt(player, run_difficulty):
 	"""rolls player dice, prints out roll, returns True if roll beats run_dc, False otherwise"""
 	roll = player.dice.roll(20)
@@ -88,7 +91,7 @@ def battle_main(settings, player, monster, grid, game_log, run_failed):
 	atype = {'attack': None}
 	crits = {'crit': False}
 	player_turn = True
-	
+
 	if run_failed:
 		player_turn = False
 
@@ -98,7 +101,7 @@ def battle_main(settings, player, monster, grid, game_log, run_failed):
 
 		battle_header(player, monster, round_num)	# there is another call to battle_header in attack_menu_input()
 
-		# player attack 
+		# player attack
 		if player_turn:
 
 			if player_attack(player, monster, fight_mods, round_num, crits, atype):
@@ -110,7 +113,7 @@ def battle_main(settings, player, monster, grid, game_log, run_failed):
 			player_turn = False
 
 		# monster attack
-		else: 
+		else:
 
 			if monster.hp > 0:
 				if monster_attack(player, monster, round_num):
@@ -159,7 +162,7 @@ def print_battle_commands():
 	print('you deal double damage.')
 	print()
 	print('FLURRY  (FLU):')
-	print('Run in mad and flailing! Easier to hit enemy (Roll +3),') 
+	print('Run in mad and flailing! Easier to hit enemy (Roll +3),')
 	print('but you usually deal less damage: damage roll gets a')
 	print('random 0 to 3 penalty.')
 	print()
@@ -169,7 +172,7 @@ def print_battle_commands():
 	print('your damage roll.')
 	print()
 	print('Type the name (or shortcut) of attack to enter command.')
-	
+
 	press_enter()
 
 def battle_header(player, monster, round_num):
@@ -181,7 +184,7 @@ def battle_header(player, monster, round_num):
 
 def check_battle_status(settings, player, monster, grid, game_log, crits):
 	"""checks state of player and monster to determine if battle is over, or should continue"""
-	
+
 	# check if player used an escape elixir on this turn
 	if player.escaping == True:
 
@@ -218,7 +221,7 @@ def check_battle_status(settings, player, monster, grid, game_log, crits):
 
 		press_enter()
 		clear_screen()
-		
+
 		step_printer('** BATTLE ENDED **', 0.03)
 		print('\n')
 
@@ -226,11 +229,11 @@ def check_battle_status(settings, player, monster, grid, game_log, crits):
 		time.sleep(0.5)
 
 		monster_leaves_item(settings, player, monster)	# called here so chance of item only happens when monster is defeated.
-		
+
 		# reset current state attribute of player so it's no longer 'battle' (relevant to potion usage)
 		player.current_state = ''
 		return True
-	
+
 	else:
 		# neither player nor monster has been defeated, fight will continue.
 		return False
@@ -255,7 +258,7 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 		# here is the actual attack die roll...
 		roll = player.dice.roll(20)
 		player.dice.print_roll()
-		
+
 		# check if roll is a critical hit
 		if roll == 20:
 			critical = 'CRITICAL HIT!'
@@ -282,8 +285,8 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 				print('+{} ({} bonus)'.format(weapon_bonus, player.weapon.name))
 
 			time.sleep(0.6)
-			print('+{} ({})'.format(fight_mods['player_roll'], 'flurry bonus')) 
-			
+			print('+{} ({})'.format(fight_mods['player_roll'], 'flurry bonus'))
+
 			if player.potion_mods['player_attack'] > 0:
 				time.sleep(0.6)
 				print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
@@ -291,7 +294,7 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 			time.sleep(0.6)
 			print('= {}'.format(total))
 
-		# FINESSE, HEADSHOT -OR- STANDARD ATTACKS - additional mod printouts 
+		# FINESSE, HEADSHOT -OR- STANDARD ATTACKS - additional mod printouts
 		# in these cases, THERE IS NO PLAYER ATTACK MOD TO PRINT - the attack styles modified enemy AC, not player roll
 		elif (atype['attack'] == 'finesse' or atype['attack'] == 'standard' or atype['attack'] == 'headshot') and not crits['crit']:
 			total = roll + player.potion_mods['player_attack'] + weapon_bonus
@@ -307,7 +310,7 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 			if weapon_bonus > 0 or player.potion_mods['player_attack'] > 0: # a non-modified roll doesn't need the '=' printout
 				time.sleep(0.6)
 				print('= {}'.format(total))
-			
+
 		# check if hit was successul or not
 		if roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus >= monster.armor_class + fight_mods['enemy_armor']:
 			print('You successfully hit the {} with your {}!'.format(monster.name, player.weapon.name))
@@ -370,7 +373,7 @@ def compute_attack_mods(player, monster, fight_mods, command, atype):
 		time.sleep(0.6)
 		print('The {}\'s AC is increased to {} on this attack!'.format(monster.name, monster.armor_class + fight_mods['enemy_armor']))
 		time.sleep(0.6)
-	
+
 	elif command.lower() == 'finesse' or command.lower() == 'fin':
 		atype['attack'] = 'finesse'
 		fight_mods['enemy_armor'] = 2
@@ -420,7 +423,7 @@ def player_damage(player, monster, fight_mods, atype):
 	# headshot damage roll (different because it's the only one with multiplication)
 	else:
 		damage = (player.dice.roll(player.weapon.damage_roll) + player.potion_mods['player_damage'] + weapon_dam_bonus) * 2
-	
+
 	# print damage roll
 	player.dice.print_roll()
 
@@ -428,7 +431,7 @@ def player_damage(player, monster, fight_mods, atype):
 	if atype['attack'] == 'headshot':
 		time.sleep(0.6)
 		print('x2 (headshot bonus)')
-	
+
 	elif atype['attack'] == 'flurry' and fight_mods['player_damage'] != 0:
 		time.sleep(0.6)
 		print('{} (flurry penalty)'.format(fight_mods['player_damage']))
@@ -452,7 +455,7 @@ def player_damage(player, monster, fight_mods, atype):
 	# this should be the only scenario in which we DON'T want the = total to printout
 	if atype['attack'] == 'standard' and weapon_dam_bonus == 0 and player.potion_mods['player_damage'] == 0:
 		mods = False
-	
+
 	if mods:	# only show this if there have been any kind of mods added
 		time.sleep(0.6)
 		print('= {}'.format(damage))
@@ -465,7 +468,7 @@ def player_damage(player, monster, fight_mods, atype):
 	# after monster is defeated.
 	if monster.hp < 0:
 		monster.hp = 0
-		
+
 def monster_attack(player, monster, round_num):
 
 	# put here to be consistent with player attack
@@ -531,7 +534,7 @@ def monster_leaves_item(settings, player, monster):
 		print('\n...but nothing was found.')
 
 	# yes, something is left behind
-	else: 
+	else:
 		item_list = ['gold', 'gold', 'gold', 'potion', 'potion', 'weapon', 'weapon']  # repetitions for chance ratio when choice() is used
 		item_type = choice(item_list)	# grab one type randomly from item_list
 
@@ -636,9 +639,9 @@ def monster_leaves_item(settings, player, monster):
 
 def battle_create_elixir(settings):
 	"""create an elixir if one is left behind by a monster. Scales with difficulty setting"""
-	elixir = {}	
-	elixir_types = ['health', 'health', 'health', 'berzerk', 'escape', 'health max'] # 3x health so that it's more likely a choice.
-	
+	elixir = {}
+	elixir_types = ['health', 'health', 'health', 'berzerk', 'berzerk', 'escape', 'health max'] # 3x health so that it's more likely a choice.
+
 	chosen_elixir = choice(elixir_types)
 
 	# establish strength of elixir based on settings > difficulty
@@ -735,7 +738,7 @@ def battle_create_armor(settings, item_level):
 			if armor_name != 'Gross T-Shirt':
 				armor_ac = 8 + randint(0, 4)
 			else:
-				armor_ac = 1	
+				armor_ac = 1
 
 		elif z > 1:
 			armor_name = choice(diff_two)
@@ -750,7 +753,7 @@ def battle_create_armor(settings, item_level):
 			if armor_name != 'Gross T-Shirt':
 				armor_ac = 8 + randint(0, 4)
 			else:
-				armor_ac = 1	
+				armor_ac = 1
 
 		elif z > 2 and z < 6:
 			armor_name = choice(diff_two)

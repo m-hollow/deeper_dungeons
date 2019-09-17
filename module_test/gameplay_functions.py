@@ -45,12 +45,12 @@ def action_menu(game_log):
 	"""print the game_log, the map, the command menu, take user input, and return user choice"""
 
 	clear_screen()
-	game_log.print_log()	# this is THE print command of the game header -and- game map !! 
+	game_log.print_log()	# this is THE print command of the game header -and- game map !!
 							# if you want to create loops that keep header active, you'll either need to figure out
 							# how and where to move this, or call it more than once.
-	
+
 	possible_choices = ['n', 's', 'e', 'w', 'r', 'i', 'b', 'q', 'd', 'save', 'settings', 'help', 'h', 'rest', 'map', 'quit']
-	
+
 	command = get_player_input().lower()
 
 	if command in possible_choices:
@@ -78,13 +78,13 @@ def game_action(settings, player, grid, game_log, gamestate_dict):
 		this_floor_level = grid.floor_chrono
 		GameGrid.floor_level = this_floor_level
 
-		# set it back to false so the above doesn't get triggered every time, but rather only after a 
+		# set it back to false so the above doesn't get triggered every time, but rather only after a
 		# game reload (code to set Reload to true is in the block where the pickle state is loaded).
 		gamestate_dict['Reload'] = False
 
 
 	active = True
-	
+
 	while active:
 		# main game event loop for *game in state of play* (as opposed to game at main menu, not in play)
 
@@ -149,9 +149,9 @@ def game_action(settings, player, grid, game_log, gamestate_dict):
 				active = False
 				settings.reset_settings()
 				player.reset_player() # *must* happen after the settings reset!
-				
+
 			if grid.floor_exited:	# flag for player finding exit and choosing to use it during this turn (in exit event)
-				
+
 				# remove floor map from player items, if necessary
 				if grid.map_found:
 					player.items.remove('Floor Map')
@@ -159,18 +159,18 @@ def game_action(settings, player, grid, game_log, gamestate_dict):
 				grid = make_next_floor(settings, player, game_log) # successfully updates the primary grid object, because this
 																   # object created here is the one getting passed around for use!
 				game_log = make_next_gamelog(game_log, grid, player)
-				
+
 				grid.update_player_location() # needs to happen here just like it does above before while loop
 				game_log.update_log()
-		
+
 def make_next_floor(settings, player, game_log):
 	"""updates gamestate to update settings and generate new grid and log"""
-	
+
 	# update settings
 	settings.difficulty += 1	# whenever make_next_floor is called, difficulty goes up by 1.
 								# this is the core of the 'too linear' game structure.
 	settings.grid_size += 1		# 2 seemed a bit too drastic, so it's 1 for now....
-	
+
 	grid = GameGrid(settings, player)	# create the new grid and return it
 	return grid
 
@@ -188,24 +188,24 @@ def make_next_gamelog(game_log, grid, player):
 	game_log = GameLog(player, grid)
 
 	return game_log
-	
-def check_player_status(settings, player): # seems we don't actually need settings ? 
+
+def check_player_status(settings, player): # seems we don't actually need settings ?
 	"""check in every pass of game action event loop to see if player status has changed in a way that triggers event"""
 
 	# check if player is alive
 	if player.hp <= 0:
 		player.dead = True
-		
+
 		you_are_dead(player)
 
 		return True
 
-	# check if player has leveled up... 
+	# check if player has leveled up...
 
 	if not player.dead:
 		player_level_check(settings, player)
-		
-	return False 
+
+	return False
 
 def player_level_check(settings, player):
 	"""checks if player can level up at end of each turn, and performs level up when applicable"""
@@ -219,14 +219,14 @@ def player_level_check(settings, player):
 		time.sleep(0.8)
 		print()
 		print('\n{} is now Level {}. Awesome!'.format(player.info['Name'], player.level), flush=True)
-		player.max_hp += 4 
+		player.max_hp += 4
 		player.hp = player.max_hp # any issues here ?
 		time.sleep(0.8)
 		print('\n{}\'s Maximum HP has been increased to {}'.format(player.info['Name'], player.max_hp))
 
 		press_enter()
 
-def run_game(settings, player):	
+def run_game(settings, player):
 	"""prints Main Menu and takes user input"""
 
 	gamestate_dict = {'Reload': False}
@@ -251,7 +251,7 @@ def run_game(settings, player):
 
 			if player.created:
 				# we create the game grid object here, so that it's a brand new grid whenever option 2 (start game) is chosen
-				
+
 				# reset GameGrid *class* attribute to zero before creating a grid, otherwise it will keep incrementing on each game start
 				GameGrid.floor_level = 0
 
@@ -259,7 +259,7 @@ def run_game(settings, player):
 				game_log = GameLog(player, grid)
 
 				# this call to game_action effectively starts the running gameplay loop:
-				game_action(settings, player, grid, game_log, gamestate_dict) 
+				game_action(settings, player, grid, game_log, gamestate_dict)
 
 			else:
 				print('\nYou need to create a character first!')
@@ -341,7 +341,7 @@ def determine_next_event(settings, player, grid, game_log, command):
 	# its VERY inefficient to check map status EVERY TIME an empty room is entered.
 	# this was my lazy way of adding 'find a map' functionality. it's obviously janky and not ideal.
 	if grid.current_room_type == 'Empty' and grid.room_status != True: # bypass print for already visited rooms.
-		
+
 		if not grid.map_found:
 			chance_of_map = randint(1,20)
 			if chance_of_map > 12:
@@ -370,7 +370,7 @@ def determine_next_event(settings, player, grid, game_log, command):
 		slow_print_elipsis('This room', 'has a TREASURE chest!')
 		time.sleep(0.8)
 		treasure_event(settings, player)
-	
+
 	elif grid.current_room_type == 'Exit': # no check on room_status because entering Exit room always triggers exit event!
 		slow_print_elipsis('This room', 'has a staircase going down!')
 		time.sleep(0.8)
@@ -458,11 +458,11 @@ def treasure_event(settings, player):
 			elif response == 'y' or response == 'yes':
 				print('Great, you\'ve replaced your {} with the {}!'.format(player.weapon.name, weapon.name))
 
-				player.weapon = weapon #mutate the player object 
+				player.weapon = weapon #mutate the player object
 				press_enter()
 
 		elif wep_or_armor == 2:
-			
+
 			armor = battle_create_armor(settings, item_level)
 
 			# this is just so the grammar of the strings below prints correctly, yepppp
@@ -492,7 +492,7 @@ def treasure_event(settings, player):
 				press_enter()
 
 def mystic_event(settings, player, grid):
-	
+
 	clear_screen()
 	slow_print_elipsis('An apparition is forming', 'it\'s a Mystic Merchant!')
 	time.sleep(0.8)
@@ -575,9 +575,9 @@ def battle_event(settings, player, grid, game_log):
 def create_random_elixir(settings):
 	"""create an elixir at random for each visit to a Mystic room. Scales with difficulty setting"""
 
-	elixir = {}	
+	elixir = {}
 	elixir_types = ['health', 'health', 'health', 'berzerk', 'escape', 'health max'] # 3x health so that it's more likely a choice.
-	
+
 	chosen_elixir = choice(elixir_types)
 
 	# establish strength of elixir based on settings > difficulty

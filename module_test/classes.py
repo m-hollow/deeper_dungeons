@@ -37,11 +37,11 @@ class GameSettings():
 class GameGrid():
 	"""Creates a grid object for the game of variable size"""
 
-	floor_level = 0		# class attribute 
+	floor_level = 0		# class attribute
 
 	def __init__(self, settings, player):
 
-		self.__class__.floor_level += 1	
+		self.__class__.floor_level += 1
 
 		self.floor_chrono = self.__class__.floor_level # order floor was created among all floors, e.g. 1 = first, 2 = second, etc.
 		self.settings = settings
@@ -59,9 +59,9 @@ class GameGrid():
 		self.create_start() # same as below, adds start on construction
 		self.create_exit_johnfix()	# doesn't need to return anything, just adds the exit on construction
 		self.create_mystic() # number of mystics = floor level, perhaps give it a +1 as well (after floor one)
-		
-		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] 
-		
+
+		self.current_room_type = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type']
+
 		# this is a bool and is used to track if current inhabited room was previously visited or not
 		# and yes, you could perform this check by checking the all_room_grid and looking at 'Visited' bool directly.
 		self.room_status = self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Visited']
@@ -70,7 +70,7 @@ class GameGrid():
 		"""we need to call this on player death or game quit, otherwise grid instance on restart picks up from last point"""
 		self.__class__.floor_level = 1
 
-		# or, instead of calling this, simply add a line of code to set GameGrid.floor_level to 0 *before* instantiating 
+		# or, instead of calling this, simply add a line of code to set GameGrid.floor_level to 0 *before* instantiating
 		# a grid object.
 
 	def make_grid(self):
@@ -90,7 +90,7 @@ class GameGrid():
 	def update_current_roomtype(self):
 		"""udpate the current_room_type attribute to reflect current player location"""
 
-		# this is as close as I initially got to a 'state' variable. the grid object constantly updates the 
+		# this is as close as I initially got to a 'state' variable. the grid object constantly updates the
 		# 'room type' attribute and 'room status' attribute to reflect 'current state' of player location.
 		# but it's all just based on the dictionary contents stored in the dictionary that resides at coordinates
 		# where player is currently located.
@@ -109,18 +109,18 @@ class GameGrid():
 		"""create a room that corresponds to each coordinate in the grid matrix object"""
 
 		all_room_grid = []	# will become a matrix (a list of lists) containing room dictionaries
-		
+
 		for r in self.grid_matrix:		# r is a list
 
 			row = []
 
 			for c in r:					# c is a string ('*'), num of loops will = num of * in list r
 				room_type = self.get_room_type()
-				room = {'Type':room_type, 'Visited':False, 'Post_Note': None} 
+				room = {'Type':room_type, 'Visited':False, 'Post_Note': None}
 				row.append(room)
 
 			all_room_grid.append(row)		# done once for each list (r) in the grid_matrix
-			
+
 		return all_room_grid
 
 	def get_room_type(self):
@@ -134,12 +134,12 @@ class GameGrid():
 			room_type = 'Monster'
 		elif num == 8:
 			room_type = 'Treasure'
-		
+
 		return room_type
 
 	def create_start(self):
 
-		self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] = 'Start'	
+		self.all_room_grid[self.player.player_location[0]][self.player.player_location[1]]['Type'] = 'Start'
 
 	def create_exit(self):
 		"""creates an exit in the room grid and makes sure it doesn't overlap with player start position"""
@@ -168,14 +168,14 @@ class GameGrid():
 
 		coords = self.getValidPosition(grid_size, playerPos, minimumRadiusDistance) # looks like three arguments to me!
 
-		self.all_room_grid[coords[0]][coords[1]]['Type'] = 'Exit'	
+		self.all_room_grid[coords[0]][coords[1]]['Type'] = 'Exit'
 
 	@staticmethod
 	def getValidYPositions(playerPos, grid_size, minimumRadiusDistance):
 		validYPositions = []
 		if (playerPos[1] > minimumRadiusDistance):
 			validYPositions += range(0, playerPos[1] - minimumRadiusDistance)
-		if (playerPos[1] + minimumRadiusDistance < grid_size-1): 
+		if (playerPos[1] + minimumRadiusDistance < grid_size-1):
 			validYPositions += range(playerPos[1] + minimumRadiusDistance, grid_size-1)
 
 		return validYPositions
@@ -190,8 +190,8 @@ class GameGrid():
 			if abs(x - playerPos[0]) < minimumRadiusDistance:
 				# Pick a valid value from the range of possible values
 				validYPositions = GameGrid.getValidYPositions(playerPos, grid_size, minimumRadiusDistance)
-				
-				# If there were none found (ie, our minimum radius does not allow for a position in every 
+
+				# If there were none found (ie, our minimum radius does not allow for a position in every
 				# slot for a grid size, winnow the radius until we can place it.
 				while (len(validYPositions) == 0):
 					minimumRadiusDistance -= 1
@@ -203,7 +203,7 @@ class GameGrid():
 					if (minimumRadiusDistance == 0):
 						print("Fatal Error: No valid Y values found for player at ({0}, {1}) on a {2}x{2} grid with x of {3} and minimum radius distance of {4}".format(playerPos[0], playerPos[1], grid_size, x, minimumRadiusDistance))
 						quit()
-				
+
 				y = validYPositions[randint(0, len(validYPositions)-1)]
 			else:
 				# Otherwise, just pick any old y.
@@ -227,7 +227,7 @@ class GameGrid():
 
 				random_x = randint(0, self.row - 1)
 				random_y = randint(0, self.col - 1)
-				
+
 				coords = [random_x, random_y]
 
 				if coords != self.player.player_location and self.all_room_grid[random_x][random_y]['Type'] != 'Exit':
@@ -250,7 +250,7 @@ class GameGrid():
 
 					random_x = randint(0, self.row - 1)
 					random_y = randint(0, self.col - 1)
-					
+
 					coords = [random_x, random_y]
 
 					if coords != self.player.player_location and self.all_room_grid[random_x][random_y]['Type'] != 'Exit':
@@ -262,7 +262,7 @@ class GameGrid():
 
 	def print_grid(self):
 		"""print the visual game grid"""
-		
+
 		print('\nLV.{}'.format(self.floor_chrono))	# will find the class attribute floor_level after looking at instance attributes.
 
 		for r in self.grid_matrix:
@@ -276,7 +276,7 @@ class GameGrid():
 
 	def dev_grid_showtypes(self):
 		"""for dev testing, not gameplay: show current properties of all rooms"""
-		
+
 		clear_screen()
 
 		r = 0
@@ -290,9 +290,9 @@ class GameGrid():
 		for row in self.all_room_grid:
 			c = 0
 			for col in row:
-				if col['Type'] == 'Empty':				 
-					grid_matrix_copy[r][c] = ' E '		
-				elif col['Type'] == 'Monster':			
+				if col['Type'] == 'Empty':
+					grid_matrix_copy[r][c] = ' E '
+				elif col['Type'] == 'Monster':
 					grid_matrix_copy[r][c] = ' M '
 				elif col['Type'] == 'Treasure':
 					grid_matrix_copy[r][c] = ' T '
@@ -315,7 +315,7 @@ class GameGrid():
 		press_enter()
 
 	def show_map(self):
-		
+
 		clear_screen()
 
 		print('#  FLOOR {} MAP  #'.format(self.floor_chrono))
@@ -330,9 +330,9 @@ class GameGrid():
 		for row in self.all_room_grid:
 			c = 0
 			for col in row:
-				if col['Type'] == 'Empty':				 
-					map_copy[r][c] = ' * '		
-				elif col['Type'] == 'Monster':			
+				if col['Type'] == 'Empty':
+					map_copy[r][c] = ' * '
+				elif col['Type'] == 'Monster':
 					map_copy[r][c] = ' * '
 				elif col['Type'] == 'Treasure':
 					map_copy[r][c] = ' T '
@@ -377,7 +377,7 @@ class Dice():
 		text = 'ROLLING...'
 		for c in text:
 			print(c, end='', flush=True)
-			time.sleep(0.06)	
+			time.sleep(0.06)
 		print(' {}'.format(self.last_roll)) # use lambda here to put 'if mods' inside line?
 		if mods:
 			print('+{}'.format(mods))
@@ -482,7 +482,7 @@ class Player():
 		print('\nYou are now ready to start the game!')
 		print('\n')
 		time.sleep(0.5)
-		print('Getting Help:') 
+		print('Getting Help:')
 		print('Type \'help\' (or just \'h\') at any time to view a list of all commands.')
 
 		self.created = True
@@ -516,14 +516,14 @@ class Player():
 
 		print()
 		print("#       ELIXIRS       #\n")
-		
+
 		if self.elixirs:
 			count = 1
 			for elixir in self.elixirs:
 				print('{}{:.>22} '.format(count, elixir['Type'].title()))
 				count += 1
 			print()
-		
+
 		if self.elixirs:
 			print()
 			print('Use an item?   Yes | No')
@@ -539,7 +539,7 @@ class Player():
 	def reset_player(self):
 		"""reset the player, triggered on exit of active game"""
 		# this will probably need modification once saving and loading are introduced!
-		
+
 		self.player_location = [(self.settings.grid_size - 1), (int(self.settings.grid_size / 2) - 1)]
 		self.previous_coords = [0,0]
 
@@ -593,19 +593,19 @@ class Player():
 					#player chose a number higher than current inventory allows
 					if response.lower() != 'q' and int(response) > current_max:
 						print('You do not have an elixir stored at that number, try again.')
-					
+
 					# player entered either 'q' or a valid potion number, so we exit this validation loop
 					else:
 						potion_inventory_valid = True
-				
+
 				# now we check if what they entered was q, if it was, we quit by ending the main loop ('active')
 				if response.lower() == 'q':
-					#print('Cool. Saving \'em for later. Smart!')	
+					#print('Cool. Saving \'em for later. Smart!')
 					active = False
 					quitting = True
 
 				# choice was not q, so it is string of an integer
-				else: 
+				else:
 					# index the elixir list attribute of player, then index the Type key of that chosen dictionary
 
 					response_int = int(response) - 1	# to account for player always entering 1 greater than actual index location
@@ -642,7 +642,7 @@ class Player():
 							print('The Berzerk Elixir is for use during a battle!')
 
 						elif self.current_state == 'battle':
-				
+
 							bonus = 4
 							self.potion_mods['player_attack'] += bonus
 							self.potion_mods['player_damage'] += bonus
@@ -682,14 +682,14 @@ class Player():
 
 			# you originally, mistakenly, used an OR here and caused yourself much confusion. remember, OR means
 			# 'the code block will execute if any ONE of these is true'
-			if not quitting and not self.escaping: 
+			if not quitting and not self.escaping:
 				press_enter()
 
 class Monster():
 	"""Generate a monster object for battle sequences, diff parameter determines difficulty"""
 
 	def __init__(self, difficulty):
-		self.difficulty = difficulty 
+		self.difficulty = difficulty
 		self.actual_level = 1 # will be modified depending on result of monster type
 
 		self.name = self.get_monster_name()	# NOTE: also determines actual level if diff is > 1
@@ -701,7 +701,7 @@ class Monster():
 		self.damage_roll = self.get_damage_roll()
 		self.armor_class = self.get_armor_class()
 		self.hp = self.get_hit_points()		# gets HP depending on actual_level
-		
+
 	def get_armor_class(self):
 		if self.difficulty == 1:
 			return randint(4, 8)
@@ -739,13 +739,13 @@ class Monster():
 			elite_monsters = file_object_4.read().split()
 
 		if self.difficulty == 1:
-		
+
 			index = randint(0, len(easy_monsters) - 1)
 			self.actual_level = 1
 			return easy_monsters[index]
 
 		elif self.difficulty == 2:
-			
+
 			num = randint(1, 3)
 
 			if num == 1:
@@ -837,7 +837,7 @@ class GameLog():
 		self.room_book_visited = self.make_room_book_visited()
 		self.current_room = 'None'   # used only to print room type in game header
 		self.current_message = 'None'
-	
+
 	def update_log(self):
 		"""update the game_log to get current room from updated grid"""
 		self.current_room = self.grid.current_room_type #a bit redundant, you could access grid object to print header info.
@@ -846,7 +846,7 @@ class GameLog():
 	def get_current_message(self):
 		"""looks at grid object to determine and return appropriate log entry"""
 
-		# this is where you use the room_status attribute bool, you COULD simply check the all_room_grid bool 
+		# this is where you use the room_status attribute bool, you COULD simply check the all_room_grid bool
 		# 'Visited' here instead, it's the same info. You just thought having this extra var was cleaner.
 
 		if self.grid.room_status == False and self.grid.current_room_type != 'Exit':
@@ -881,11 +881,11 @@ class GameLog():
 			elif self.grid.current_room_type == 'Mystic':
 				self.current_message = self.room_book_visited['Mystic']
 
-		return self.current_message	
+		return self.current_message
 
 	def print_log(self):
 		"""prints the header, the current dungeon grid, and the current log text entry"""
-		
+
 		# print header stats
 		print('{} the {} \t HP: {}  GOLD: {}  EXP: {}\t ROOM: {}'.format(self.player.info['Name'].upper(), self.player.info['Race'], \
 			self.player.hp, self.player.gold, self.player.exp, self.current_room))
@@ -950,7 +950,7 @@ class MainMenu():
 		print('4. Exit Game')
 
 	def main_choice(self):
-		
+
 		possible_choices = ['1','2','3','4']
 		active = True
 

@@ -14,7 +14,7 @@ def you_are_dead(player, text=''):
 		print(text)
 
 	step_printer('YOU ARE DEAD')
-	
+
 	time.sleep(0.8)
 	print()
 	print('\nSo passes {} the {} into the endless night.'.format(player.info['Name'], player.info['Race']))
@@ -42,13 +42,13 @@ def slow_print_two(word_one, word_two):
 def slow_print_elipsis(word_one, word_two, elip=6):
 	"""prints word one, then step prints elipsis, then prints word two"""
 	elipsis = ('.' * elip)
-	
+
 	print(word_one, end='', flush=True)
-	
+
 	for c in elipsis:
 		print(c, end='', flush=True)
 		time.sleep(0.06)
-	
+
 	print(word_two, flush=True)
 
 def command_menu(player):
@@ -58,12 +58,12 @@ def command_menu(player):
 	print('#{:^34}#'.format(player.info['Name'].upper() + '\'s COMMANDS'))
 	print()
 	print('MOVE: North  VIEW:  Bio   GAME: Save')
-	print('      South         Item        Quit')          
-	print('      East')        							 
-	print('      West')									 
-	print()								 
+	print('      South         Item        Quit')
+	print('      East')
+	print('      West')
+	print()
 	print('\n')
-	print('Type the first letter of a command') 
+	print('Type the first letter of a command')
 	print('at the game prompt (>).')
 
 	press_enter()
@@ -83,7 +83,7 @@ def main_menu(player):
 	print('\nCurrently Loaded Character: {}'.format(player.info['Name']))
 
 	possible_choices = ['1','2','3','4','5']
-	
+
 	msg = '\nEnter your choice: '
 	choice = input(msg)
 	if choice in possible_choices:
@@ -92,8 +92,8 @@ def main_menu(player):
 		print('That\'s not one of the menu options!')
 		press_enter()
 		return None 			# no loop is necessary in this function because run_game's call to this func gets None,
-								# therefore has no other action to perform, so it (run_game body loop) loops, calling 
-								# this function again. 
+								# therefore has no other action to perform, so it (run_game body loop) loops, calling
+								# this function again.
 
 def get_player_input(text=None):
 	if text:
@@ -113,7 +113,7 @@ def get_input_valid(text=None, key='standard'):
 					# not necessary, but clean...
 
 	possible_choices = get_possible_choices(key)
-	
+
 	valid = False
 
 	while not valid:
@@ -148,7 +148,7 @@ def get_possible_choices(key):
 
 	# think of it like this: this place is the 'master set' of valid commands.
 	# inside the actual game functions, you will parse the inputs to perform the
-	# corresponding actions, *always knowing that a valid command has already been 
+	# corresponding actions, *always knowing that a valid command has already been
 	# entered*.
 
 	return possible_choices
