@@ -230,6 +230,8 @@ def check_battle_status(settings, player, monster, grid, game_log, crits):
 
 		monster_leaves_item(settings, player, monster)	# called here so chance of item only happens when monster is defeated.
 
+		# reset the stamina count so player doesn't have left over stamina boost in next battle
+		player.stamina_count = 0
 		# reset current state attribute of player so it's no longer 'battle' (relevant to potion usage)
 		player.current_state = ''
 		return True
@@ -255,6 +257,11 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 
 		weapon_bonus = 0	# default to zero, will update below if applicable weapon is used
 
+		if player.stamina_count > 0:
+			stamina_bonus = 3
+		else:
+			stamina_bonus = 0
+
 		# here is the actual attack die roll...
 		roll = player.dice.roll(20)
 		player.dice.print_roll()
@@ -277,7 +284,7 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 
 		# FLURRY ATTACK - additional attack mod printouts
 		if atype['attack'] == 'flurry' and not crits['crit']: # don't show mods on a critical hit
-			total = roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus
+			total = roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + stamina_bonus + weapon_bonus
 
 			# print weapon bonus, if applicable
 			if weapon_bonus > 0:
@@ -291,13 +298,18 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 				time.sleep(0.6)
 				print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
 
+			if player.stamina_count > 0:
+				time.sleep(0.6)
+				print('+3 (Stamina Bonus)')
+				player.stamina_count -= 1
+
 			time.sleep(0.6)
 			print('= {}'.format(total))
 
 		# FINESSE, HEADSHOT -OR- STANDARD ATTACKS - additional mod printouts
 		# in these cases, THERE IS NO PLAYER ATTACK MOD TO PRINT - the attack styles modified enemy AC, not player roll
 		elif (atype['attack'] == 'finesse' or atype['attack'] == 'standard' or atype['attack'] == 'headshot') and not crits['crit']:
-			total = roll + player.potion_mods['player_attack'] + weapon_bonus
+			total = roll + player.potion_mods['player_attack'] + stamina_bonus + weapon_bonus
 
 			if weapon_bonus > 0:
 				time.sleep(0.6)
@@ -307,12 +319,17 @@ def player_attack(player, monster, fight_mods, round_num, crits, atype):
 				time.sleep(0.6)
 				print('+{} ({})'.format(player.potion_mods['player_attack'], 'berzerk bonus'))
 
-			if weapon_bonus > 0 or player.potion_mods['player_attack'] > 0: # a non-modified roll doesn't need the '=' printout
+			if player.stamina_count > 0:
+				time.sleep(0.6)
+				print('+3 (Stamina Bonus)')
+				player.stamina_count -= 1
+
+			if weapon_bonus > 0 or player.potion_mods['player_attack'] > 0 or stamina_bonus > 0: # a non-modified roll doesn't need the '=' printout
 				time.sleep(0.6)
 				print('= {}'.format(total))
 
-		# check if hit was successul or not
-		if roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + weapon_bonus >= monster.armor_class + fight_mods['enemy_armor']:
+		# check if hit was successul or not (?: couldn't you just compare against 'total' here???)
+		if roll + fight_mods['player_roll'] + player.potion_mods['player_attack'] + stamina_bonus + weapon_bonus >= monster.armor_class + fight_mods['enemy_armor']:
 			print('You successfully hit the {} with your {}!'.format(monster.name, player.weapon.name))
 			return True
 
@@ -408,13 +425,18 @@ def player_damage(player, monster, fight_mods, atype):
 
 	weapon_dam_bonus = 0
 
+	if player.weapon.poison_count > 0:
+		poison_bonus = 3
+	else:
+		poison_bonus = 0
+
 	if player.weapon.bonus:
 		if player.weapon.bonus[0] == 'Damage':
 			weapon_dam_bonus = player.weapon.bonus[1]
 
 	# non-headshot attack damage roll
 	if atype['attack'] != 'headshot':
-		damage = player.dice.roll(player.weapon.damage_roll) + fight_mods['player_damage'] + player.potion_mods['player_damage'] + weapon_dam_bonus
+		damage = player.dice.roll(player.weapon.damage_roll) + fight_mods['player_damage'] + player.potion_mods['player_damage'] + poison_bonus + weapon_dam_bonus
 
 		# prevent negative damage from flurry + a low roll
 		if damage <= 0:
@@ -422,7 +444,7 @@ def player_damage(player, monster, fight_mods, atype):
 
 	# headshot damage roll (different because it's the only one with multiplication)
 	else:
-		damage = (player.dice.roll(player.weapon.damage_roll) + player.potion_mods['player_damage'] + weapon_dam_bonus) * 2
+		damage = (player.dice.roll(player.weapon.damage_roll) + player.potion_mods['player_damage'] + poison_bonus + weapon_dam_bonus) * 2
 
 	# print damage roll
 	player.dice.print_roll()
@@ -450,10 +472,21 @@ def player_damage(player, monster, fight_mods, atype):
 		time.sleep(0.6)
 		print('+{} (berzerk bonus)'.format(player.potion_mods['player_damage']))
 
+	if player.weapon.poison_count > 0:
+		time.sleep(0.6)
+		print('+3 (poison damage)')
+
+		# decrement the poison counter since poison only works three times
+		player.weapon.poison_count -= 1
+
+		# check if this was the last use of the three poison charges and if so, remove (P) from weapon name
+		if player.weapon.poison_count < 1:
+			player.weapon.name = player.weapon.name.replace('+P', '')
+
 	# attack mods and potion mods have been printed, so now we can print the total damage
 
-	# this should be the only scenario in which we DON'T want the = total to printout
-	if atype['attack'] == 'standard' and weapon_dam_bonus == 0 and player.potion_mods['player_damage'] == 0:
+	# this should be the ONLY scenario in which we DON'T want the = total to printout
+	if atype['attack'] == 'standard' and weapon_dam_bonus == 0 and player.potion_mods['player_damage'] == 0 and poison_bonus == 0:
 		mods = False
 
 	if mods:	# only show this if there have been any kind of mods added
@@ -640,7 +673,7 @@ def monster_leaves_item(settings, player, monster):
 def battle_create_elixir(settings):
 	"""create an elixir if one is left behind by a monster. Scales with difficulty setting"""
 	elixir = {}
-	elixir_types = ['health', 'health', 'health', 'berzerk', 'berzerk', 'escape', 'health max'] # 3x health so that it's more likely a choice.
+	elixir_types = ['health', 'health', 'health', 'berzerk', 'berzerk', 'poison', 'stamina', 'escape', 'health max'] # 3x health so that it's more likely a choice.
 
 	chosen_elixir = choice(elixir_types)
 
@@ -656,6 +689,10 @@ def battle_create_elixir(settings):
 	if chosen_elixir == 'health':
 		cost = (5 * elixir_strength)
 	elif chosen_elixir == 'berzerk':
+		cost = 10
+	elif chosen_elixir == 'poison':
+		cost = 10
+	elif chosen_elixir == 'stamina':
 		cost = 10
 	elif chosen_elixir == 'escape':
 		cost = 15

@@ -576,7 +576,7 @@ def create_random_elixir(settings):
 	"""create an elixir at random for each visit to a Mystic room. Scales with difficulty setting"""
 
 	elixir = {}
-	elixir_types = ['health', 'health', 'health', 'berzerk', 'escape', 'health max'] # 3x health so that it's more likely a choice.
+	elixir_types = ['health', 'health', 'health', 'berzerk', 'berzerk', 'poison', 'stamina', 'escape', 'health max'] # 3x health so that it's more likely a choice.
 
 	chosen_elixir = choice(elixir_types)
 
@@ -592,6 +592,10 @@ def create_random_elixir(settings):
 	if chosen_elixir == 'health':
 		cost = (5 * elixir_strength)
 	elif chosen_elixir == 'berzerk':
+		cost = 10
+	elif chosen_elixir == 'poison':
+		cost = 10
+	elif chosen_elixir == 'stamina':
 		cost = 10
 	elif chosen_elixir == 'escape':
 		cost = 15

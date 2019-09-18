@@ -389,6 +389,7 @@ class Weapon():
 		self.damage_roll = damage_roll
 		self.icon = self.get_dam_icon()
 		self.bonus = bonus
+		self.poison_count = 0    # tracks if weapon has poison elixir on it, and how long it lasts
 
 	def print_stats(self):
 		print('*** WEAPON INFO ***')
@@ -429,6 +430,7 @@ class Player():
 		self.current_state = ''
 		self.info = {'Name':'None', 'Race':''}
 		self.potion_mods = {'player_attack': 0, 'player_damage': 0}
+		self.stamina_count = 0
 
 		# starting values for player game attributes
 		self.name = self.info['Name']
@@ -442,7 +444,7 @@ class Player():
 		self.dice = Dice()
 
 		# player items
-		self.elixirs = [{'Type': 'health', 'Strength': 1, 'Cost': 5},]
+		self.elixirs = [{'Type': 'health', 'Strength': 1, 'Cost': 5}, {'Type': 'poison', 'Strength': 1, 'Cost': 10}, {'Type': 'stamina', 'Strength': 1, 'Cost': 10}]
 		# this is just for playtesting, having player start with a bunch of potions
 		#self.elixirs = [{'Type': 'escape', 'Strength': 1, 'Cost': 15},{'Type': 'health max', 'Strength': 1, 'Cost': 15},{'Type': 'berzerk', 'Strength': 1, 'Cost': 10},]
 		self.items = ['Torch',]
@@ -657,6 +659,40 @@ class Player():
 
 							active = False
 
+					elif self.elixirs[response_int]['Type'] == 'poison':
+						self.weapon.poison_count = 3
+
+
+
+						time.sleep(0.06)
+						step_printer('APPLYING POISON...')
+						print('\nYou applied the poison to your {}!'.format(self.weapon.name))
+						time.sleep(0.5)
+						print('Your {} will deal +3 damage on its next 3 successful strikes.'.format(self.weapon.name))
+
+						self.weapon.name += '+P'
+
+						del self.elixirs[response_int]
+						active = False
+
+					elif self.elixirs[response_int]['Type'] == 'stamina':
+
+						if self.current_state != 'battle':
+							print('The Stamina Elixir is for use during a battle!')
+
+						elif self.current_state == 'battle':
+
+							self.stamina_count = 3
+
+							time.sleep(0.06)
+							step_printer('DRINKING ELIXIR...')
+							print('\nYou drank the STAMINA elixir!')
+							time.sleep(0.5)
+							print('You will receive +3 on your next 3 attack rolls.')
+
+							del self.elixirs[response_int]
+							active = False
+
 					elif self.elixirs[response_int]['Type'] == 'escape':
 
 						if self.current_state != 'battle':
@@ -784,7 +820,7 @@ class Monster():
 				self.actual_level = 1
 				return easy_monsters[index]
 			elif num > 1 and num < 4:
-				index = randint(0, len(medium_monstes) -1)
+				index = randint(0, len(medium_monsters) -1)
 				self.actual_level = 2
 				return medium_monsters[index]
 			elif num >= 4 and num < 7:

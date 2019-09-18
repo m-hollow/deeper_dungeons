@@ -1,0 +1,284 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf500
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica-Oblique;
+}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11620\viewh14620\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 battle to-do:\
+\
+\
+\'95 if you view commands or potions, it works, but the header doesn\'92t get reprinted afterward.\
+\
+\'95 need a pause between player attack and monster attack\
+\
+\'95 I removed all press_enter() calls from the interior battles functions (player_attack, damage, etc) because it\'92s harder to track where they are located if they are scattered across 4+ different functions. the idea now is to 
+\f1\b only put them in the main event loop of the battle
+\f0\b0  so it\'92s very clear where exactly they happen, and no guesswork is necessary about if they happen elsewhere (there may be some exceptions, though, like viewing the command menu and items / potions will always run a press_enter() so they don\'92t just disappear)\
+\
+\
+\'95 different parts of the code are using different get_input functions. make it consistent. if you want to use your new input validation system, how will you handle the battle_encounter function? \
+\
+\'95 in the loop so that showing command menu, items / potions etc keep the battle prompt active, could you use continue somehow?\
+\
+\'95 need more visible info about what difference it makes to try the three different type of attacks\
+\
+\'95 i pressed \'91i\'92 on the attack prompt and it attacked\'85. it should not have.\
+	i think this is simply because you have no actual response for it yet.\
+\
+\
+\'95 you forgot to implement the entire h - t - l battle system, oh my. build it.\
+\
+\'95 after a critical hit by player, the damage roll still gets rolled (it shouldn\'92t). need a flag here.\
+\
+\
+\
+\
+\'95 critical hit tracking. I tried to set a simple bool critical_hit to False, pass it from battle_main into player_attack, if the attack is a critical hit, reassing it to True (critical_hit = True) and then use that as a flag for whether or not the damage roll gets done *back in the battle_main function*. \
+\
+	\'95 this didn\'92t work because the only thing player_attack is passing back is its own basic True statement that has nothing to do with the update to critical_hit. I did a test and printed the value of critical hit back in the battle_main, and even though it had been changed to True in the player_attack function, it was False in the main function. this is basic stuff, though: you passed a primitive type to a function. you change the value of the parameter inside the inner function (player_attack) but back in battle_main, critical_hit is still False.You changed a copy of that value, not the value itself (update: technically that\'92s not what happens. a new object was created when you modify the object reference sent to the function. but anyway). It\'92s a primitive type.\
+\
+\'95 DO NOT FORGET that any attributes you change that are tied 
+\f1\b just to one battle
+\f0\b0  will need to be RESET after the battle. If you use the player.crit system to flag critical hits, that needs to be reset so that player.crit = False when the next battle starts!  which is actually an argument for why you shouldn\'92t do it that way\'85 but the point is, the player object is going to stick around, so any changes to its attributes are meaningful!\
+\
+\
+\
+\'95 need to track spatial 
+\f1\b line 
+\f0\b0 locations so everything prints in the 
+\f1\b same area at all times
+\f0\b0  rather than moving up and down. 
+\f1\b if there\'92s no prompt on the screen, other items still need to print in the same area they would print if the prompt was active. 
+\f0\b0 this will maintain consistency across all playing of game / battle.\
+\
+\
+\
+\'95 
+\f1\b do you need to reset a defeated monster ??
+\f0\b0  think through the object creation. when a new instance is made, it will always be fresh, right? so you probably dont\'92 need to reset a defeated one\'85.it\'92s not being used again.\
+\
+\
+\
+\'95 dont\'92 forget about re-structuring your main dd file with functions and classes as modules\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+\'95 you have battle_header calls inside the player attack and (now, for symmetry) monster attack functions.\
+  its in the player one because if the player chooses a menu option (potion, item, bio, commands, etc) rather than an attack, when they return to battle from viewing the menu, the header will be gone. so the header call is inside the while loop in the player_attack, to prevent this. \
+	here\'92s (probably) how to fix this, and get rid of the battle header call inside player_attack, so there is only the one in the battle_main loop: \
+		\'95 create a player_input var in battle main, and put the menu functionality HERE in the battle_main loop.  we then parse the player input: if they entered an attack command, we use a conditional branch to then launch the attack as normal. if they entered a menu command, we display the menu, then restart the main battle_main event loop afterward (figure out how to do this with the already active main battle event loop, rather than nesting another loop inside the main one). this means the same, original battle_header in the main battle loop is what gets called when the player exits the potion / item/ command menu, rather than in a loop inside the player_attack. it also means you can remove the loop in player attack, since its only there to allow for \'91looping back\'92 after a non-attack user input is given.\
+	finally, also remove the battle_header() call in monster_attack, you only added it for symmetry with the player_attack() function anyway, you don\'92t need it!\
+	this whole structure will improve the code: player_attack() should ONLY handle an actual attack, not a bunch of menu options. it should also eliminate the need for the awkward \'93out of loop command\'94 variable in player_attack(), where you need the variable created inside the while loop so you assign it to an \'91outer\'92 variable to use it post-loop. It works, sure, but it\'92s odd\'85.\
+\
+\'95 remember that the \'91learn python the hard way\'92 book has an appendix all about using BASH\
+\
+	?	Zero or One\
+	*	Zero or More\
+	+	One or More\
+\
+\
+every object has its own Dice object, so that die is rolled when that object is used. \
+keep things simple: Potions are the additional modifiers. everthing else instantiates with a fixed Dice class.\
+\
+\
+keep the system clean \'97 it\'92s all about rolling dice.\
+\
+\
+\'95 you thought it was clever to switch the \'91sides\'92 into the roll method of the dice, rather than have it be an attribute of the class itself. this did make sense, as it makes the Dice a more generic type of object, that can simply be created, and then rolled by anyone at anytime with a fed-in number of sides 
+\f2\i per roll
+\f0\i0 . \
+\
+\'95 but you ALSO decided to give a Dice object to other class types: Player, Monster. And now you\'92re giving dice to game objects like weapons, maybe even potions. This sort of organizational logic doesn\'92t really fit with the logic of putting \'91sides\'92 in the roll method. It seems to say: we want to 
+\f2\i customize 
+\f0\i0 each Dice instance per the object its being created 
+\f2\i for
+\f0\i0  \'97 a player, a monster, a weapon, a potion, etc. If sides is simply fed into the roll method on every call, you just have a generic die object, not a cutomized object. To customize it, it makes sense to give it sides as an attribute.\
+\
+through the game, any die roll action is not performed with a generic die, but with a 
+\f1\b specific 
+\f0\b0 die for the given object.\
+\
+a python Dictionary is an \'91associative array\'92\
+\
+\
+you could have humanoid enemies carrying weapons and if the player defeats the enemy, they have the option to take the weapon the enemy carried. weapons could be randomized among enemies but scaled by difficulty level, etc.\
+\
+\
+\'95 battle_ten \'97 you now have input validation happening in two places, and I think that defeats the whole point of your input validation checking function. \
+\
+	\'95 I\'92m not really convinced that moving the attack menu while loop into battle_main from player_attack()\
+	was a good diea. battle_main feels really top heavy now, and before it felt really streamlined. perhaps\
+	revert back to how it was battle_eight / nine.\
+\
+new flow of player_attack():   remember that player_attack() must return a bool!\
+	\
+	\'95 Function One:        attack_menu + input\
+	\'95 Function Two:	attack modifiers computed and added (displayed as well?)\
+	\
+	\'95 run battle roll & follow-up \'97 straight code or third function\
+\
+\
+POTIONS:\
+\
+	to keep things clearer, more organized, I think potion mods should be computed and displayed\
+	
+\f1\b separately 
+\f0\b0 from the fight_mods dictionary. \
+	even though they essentially modify the exact same things (monster armor class, player roll, player damage) I think it\'92s too confusing to have fight_mods getting updated by 
+\f2\i two different possible sources of modification
+\f0\i0  (e.g. player attempting a headshot, player using a potion). And that approach would also make it very difficult to display which type of mod was being used, e.g. fight_mods[\'91player_roll\'92] = 7, but what part of that 7 is from an attack choice or from a potion? how would we know?\
+\
+	so, simply keep them as distinct, seperate things that are tracked and performed.\
+\
+	fight_mods right now 
+\f1\b only
+\f0\b0  pertains to whether the player is attempting a headshot or not, but you\
+	can add more functionality to it later, giving the player more ways to attempt to modify their attack,\
+	which will thereby change monster_ac, player_roll, player_damage\
+\
+	potions is its own deal, calculated seperatedly. how exactly that works will depend on how you\
+	structure the potion class objects. but they will be used and calculated within the same player_attack\
+	framework that is already there, just as the fight_mods are being modded and updated in that\
+	same space.\
+\
+	the way fight_mods and potion mods are handled won\'92t be the same / symmetrical, because fight_mods is just a dictionary created inside battle_main function, and potions are stored within the player object as a class attribute.\
+\
+\
+you originally had the idea that the dice object has the method to print modifications to the dice roll.\
+but, I\'92ve wound up just putting all the mod printing into the battle functions themselves. it should be one or the other, so currently the dice mod printing functionality is not being used.\
+\
+\
+\
+NOTE: in some cases where you have a series of 
+\f1\b if 
+\f0\b0 statements one after another, NOT as \'91if..elif\'92 but simply one if followed by another if (meaning, you want to check them all, because in the function there are multiple possibile things to check, not just \'91one or the other\'92) you could also create a series of cascading if..else\'85 where the subsequent ifs go in the \'91else\'92 of the previous if.\
+\
+as an example, look atthe player_attack function\
+\
+	if roll == 20, do the critical hit code\
+	\
+	else: # not a critical hit\
+		if fight_mods\'85		# other stuff happens now\
+\
+this actually eliminates the need for the crits ditionary / bool and checks on it, because the remainder stuff\
+will happen only if a critcial hit 
+\f1\b didn\'92t
+\f0\b0  happen.\
+\
+as usual there\'92s just more than one way to do things, but maybe it\'92s worth a refactoring attempt to see if you prefer this approach to the battle code.\
+\
+\
+\
+BUG TO FIX \'97 FLURRY PENALTY CAN MAKE DAMAGE GO BELOW ZERO, WHICH WILL THAN *ADD* TO MONSTERS HP! pretty funny stuff. need to add an \'91if\'92 that will make a damage dealt minimum of 1 
+\f1\b that is, flurry penalty cannot drop a damage roll below 1
+\f0\b0 .\
+\
+BUG TO FIX \'97 Monster Critical Hit \'97 it\'92s awkward, and prints the normal die roll, not the total. fix up.\
+\
+IMPLEMENTATION \'97 double damage. why is this hard to figure out? just do a x = (x * 2) on damage rolls.\
+	\
+IMPLEMENTATION - on invalid input at > prompt, I want the screen to clear and reprint. how would I do this, given that I\'92m now doing all input validation inside a separate, single function? has to do with where the input validation is placed inside the main loop, right? create a flag: input was invalid, so false is returned, which tells us to reset the main loop and print everything again (you\'92d need a press_enter() after the invalid input message, though). if input is valid, things proceed as usual.\
+\
+\
+if roll + fight_mods[player_roll] >= monster.armor_class + fight_mods['enemy_armor']:\
+this is a little silly because the player_roll mod only applies to a flurry and the enemy_armor mod only applies\
+to a headshot, but both are being computed anyway, even though both cannot occur at the same time. it doesn\'92t matter, because they are simply values and if one is active, the other will be 0. but it\'92s still possibly ineffecient to be checking against both when you know that only one can be used at at time.\
+THAT SAID, if you implement other things besides flurry and headshot that might modify these values, you will want both checked\'85.so uh, maybe it\'92s fine after all!\
+\
+\
+re-iteratinon of a previous point:\
+- note behavior of typing \'91i\'92 or \'91p\'92 at prompt:  text is printed, but then we return to cursor\
+( this is because the battle header is reprinted!)\
+- but on an invalid entry, the screen \'91moves down\'92 \'97 no clear screen and reprint of header\
+\
+how to make the former like the latter ??  is it not possible because the input validation is handled by \
+a separate function, and that function will never print the battle header? or is there some control flow approach that could make the invalid input scenario behave like the \'91i\'92 \'91p\'92 \'91b\'92 scenarios ???\
+\
+
+\f1\b 	\'95 can\'92t you just do a battle_header call (which has a clear_screen inside it, right?) not in the 	input valid function, but in a loop where it\'92s called from?\
+
+\f0\b0 \
+\
+again\'85.\
+\
+# before, I was thinking that when the player finishes a floor, I would need to create a \
+# NEW dungeon object. now I'm thinking I can just modify the existing, original dungeon object\
+# with this internal method instead. \
+\
+# but does that make more sense? is it better?\
+# think about the monster class. every time determine_next_event hits a 'battle' call, a \
+# fresh new monster object is generated. the object is built, used and then discarded when the battle \
+# ends. when a new battle starts, a new monster object is instantiated. \
+# THAT is effective use of a Class object: instantiate a new one every time one is needed.\
+\
+# so, should the approach do dungeon floors be the same? should we discard the previous Grid object\
+# and build a new one every time the player enters a new floor, just as with the Monster objects?\
+# or should we treat the grid like the player object, and maintain just one throughout the course of\
+# the game? think through what the Pros and Cons might be of either scenario!\
+\
+\
+TYPES OF OBJECTS IN GAME / HOW & WHEN THEY ARE CONSTRUCTED\
+\
+class objects that are created and discarded as necessary throghout gameplay:\
+\
+	\'95 monster\
+	\'95 weapon\
+	\'95 armor\
+	\'95 potion / elixir\
+\
+class objects that are instantiated at start of gameplay and that instance is used throughout gameplay;\
+the object is not reconstructed until game is quit (to main menu) and a new game is started, at which point\
+those objects are reconstructed. this format allows for possible \'91settings changes\'92 via the main game menu,\
+which would result in the objects being constructed *differently* when the gameplay is launched (e.g. starting with more HP, or starting in a harder dungeon, or starting with a bonus item, etc).\
+\
+	\'95 player\
+	\'95 grid\
+	\'95 settings\
+	\'95 game log\
+\
+\
+\
+TO DO AGAIN:\
+\'95 invalid command entered at map prompt > (north, south, etc) results in a clear_screen after \'91try again\'92 message, which looks nice\
+\
+\'95 whereas an invalid command in a battle DOES NOT clear the screen, you get the annoying \'92text moves down\'92 effect. make it like the above instead.\
+\
+\
+the grid object issue\'85 is this just as simple as having a line of code that is run in main loop when player chooses to exit the floor, and that line simply assigns a new Grid object to the grid varible that all the game code is passing around ??\
+\
+or to make it slightly more involved, create a function called \'91build new game grid\'92 but all its doing is assigning an entirely new grid object to the grid that already exists, effectively overwriting the grid?\
+\
+this is a different logic than the way Monster works. monster simply gets constructed every time we call the battle_encounter function. it never needs to be overwritten.\
+\
+there is more than one way to do this, so the questions become, which is most efficient? which makes most sense in context of this type of game? \
+\
+\
+one approach is just to overwrite the current object being used (grid) by doing a grid = GameGrid() call that generates an entrely new grid and assigns it to the name of the old grid. but is this the best way?\
+\
+discuss this with john, and note the difference between how the monster class is used / constructed: \
+	e.g. one is made every time a certain function gets called within gameplay\
+		
+\f2\i a monster object is constructed many times
+\f0\i0 \
+and how the grid object is used / constructed:\
+		grid is constructed at start of gameplay, then \'91ovewritten / re-assigned to\'92 by calling the \
+		GameGrid() class constructor again and reassigning it to original grid object. \
+\
+	similar in that yes, both involve 
+\f1\b calling the class constructor\
+	
+\f0\b0 but different in that with the monster object, you never re-assign / overwrite the name, you just\
+	build one as needed, whereas with grid you make it once, then re-assign / overwrite that name. (as currently implemented)\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+}

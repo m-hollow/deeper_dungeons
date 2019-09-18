@@ -1,0 +1,197 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf500
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fnil\fcharset0 Menlo-Regular;
+\f3\fswiss\fcharset0 Helvetica-Oblique;}
+{\colortbl;\red255\green255\blue255;\red242\green242\blue242;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c95825;\csgray\c0\c85000;}
+\margl1440\margr1440\vieww13760\viewh13080\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \
+settings.difficulty is simply an int that starts at value 1.\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 settings.difficulty 
+\f0\b0 currently has affect on \'97\
+\
+	\'95 monster construction				monster class constructor   - monster diff = self.difficulty\
+	\'95 strength of elixirs sold by mystics		mystic event function\
+	\'95 amount of treasure found 			treasure event function\
+\
+	\'95 quality of Weapon or Elixir found		\'95 after monster is defeated (if it leaves an item)\
+\
+	\'95 amount of gold left by monster			\'95 after monster is defeated (if it leaves gold)\
+\
+	\'95 ??? amount of monsters and treasure generated on a dungeon floor map\
+\
+logic of how difficulty is scaled, currently:\
+\
+\'95 right now, when 
+\f1\b make_next_floor()
+\f0\b0  is called, settings.difficulty gets a += 1\
+\
+\'95 when a monster is created with a call to Monster() class in battle_event, settings.difficulty is the only argument passed\
+ to the class constructor\
+\
+	\'95 the monster \'91difficulty\'92 attribute = settings.difficulty (value at time monster is constructed)\
+\
+\
+\
+\
+NOTE: in current game design, the generation of rooms in the all_room_grid of the Grid class has NO scaling / changes based on\
+current difficulty settings. If you want successive dungeon floors to have more monsters, more treasure, etc, you will need to implement that scaling.\
+\
+THAT SAID, the monster object creates monsters based on current settings.difficulty level, as already noted. \
+\
+So, Monsters scale, but chance of creation of a monster Room does not scale.\
+\
+\
+BUG:\
+The game crashed when trying to call create_random_elixir() from the monster_leaves_item() function in battle.py\
+I thought the solution was to add from gameplay_functions import * at the top of battle.py, because that wasn\'92t there,\
+and create_random_elixir is indeed inside gameplay_functions.py. BUT, after doing this, I still got the error:\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f2 \cf2 \cb3 \CocoaLigature0 line 375, in monster_leaves_item\
+    elixir = create_random_elixir(settings)\
+NameError: name 'create_random_elixir' is not defined
+\f0 \cf0 \cb1 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\
+which is super weird because that function exists in gameplay_functions. why was it not found? why this name error? \
+\
+my solution was a total workarond, and not ideal: I made a different create elixir function inside battle.py ,called battle_create_elixir.  but this is really redundant, because all it does is the same code that create_random_elixir ran.\
+\
+what about a STATE_INFO object that gets passed around everywhere, so you can always check on the current gamestate (it would have to also be modified all the time to reflect the current gamestate).\
+\
+if potions were an object and usage differs depending on whether your in battle or not, you can have the use_potion function flagged by looking at the STATE_INFO dictionary / class / whatever to see what the current status is. e.g. you\'92ll know \'93right now is a battle\'94 or \'93right now is standing in dungeon room\'94 because state_info will also update to reflect the current status of what is going on. it would need a method or corrsponding function that updates\'85.which is tricky, it would need to update *all the time*.\
+\
+\
+\
+TO DO:\
+\
+\'95 desperately need to implement Item finds / rooms for BETTER WEAPONS, the 1d4 dagger doesn\'92t stand a chance against higher level enemies!\
+\
+- perhaps a Treasure chest doesn\'92t have gold, but a weapon? or new armor that raises your AC?\
+- perhaps a monster leaves behind a weapon or armor, not just potions?\
+\
+- check how RUN DIFFICULTY is deteremined, and scale appropriately with new scaling logic.\
+\
+\'95 weapons and elixirs can be found in treasure chests, not just gold. \
+\
+		\'95 this means opening a chest calls similar functions as the monster_leaves_item function\
+		\'95 rather than duplicating a bunch of code, you should have standardized \'91random gold / potion / weapon\'92 functions\
+		  that get called when needed. yes, there is a difference of context \'97 if it\'92s called in battle, we need to \'91know\'92 that\
+		and get some info from the monster, e.g. it\'92s difficulty level. whereas if its called from a treasure chest, there is\
+	 	no monster so that wouldn\'92t be passed. this is another case where a \'91state\'92 package would be useful: the state \
+		would flag if the context of the call was a battle or a treasure chest. \
+\
+		tricky because if these functions take \'91monster\'92 as a parameter, you need to make that parameter optional otherwise\
+	          you can\'92t call the function from a non-battle / no monster argument context (e.g. a treasure chest).\
+\
+\
+\
+\'95 weapons left by monsters might have bonuses to attack or damage. this will be stored in the weapon object info under weapon.bonus in a list with this format [bonus_type, bonus_amount]. HOWEVER, use of these bonuses has not been implemented anywhere in the game combat, so they won\'92t do anything. There\'92s also no way to see the bonus info in the inventory screen.\
+\
+\'95 levelling up should refill your HP (it doesn\'92t right now, just increases max HP)\
+\
+\'95 add ARMOR as something that can be found \
+\
+\
+because of the weird issue of the battle.py file not finding the relevant functions it needed in gameplay.py (at least, I think that is what was happening) I basically started up a bad habit of rewriting the same code in different places. there is a lot of doubled-up code in when it comes to the generation of random items. treasure_event and monster_leaves_item both have a bunch of duplicate code. there should be ONE primary set of functions for generating items randomly, and this should be called when a monster leaves an item or when a treasure chest is opened. currently, that\'92s note how it works, there\'92s different code for running these kinds of events separately. this is an obvious area for refactoring later on.\
+also, the use_elixir_map and battle potion stufff is mostly overlapping code, too.\
+\
+\
+potion use on map is currently a method of the player class, triggered through the player inventory screen (also a method of player)\
+\
+but potion use in battle is a totally separate function, not a class method, even though it\'92s essentially the same code (but does some processsing of monster info).\
+	so, to refactor this:\
+	make another player method called \'93battle_potion_usage\'94 \
+		\'95 you don\'92t need to send it the actual monster class object! just send it 
+\f3\i whatever info you need from that object\
+		
+\f0\i0   this is that same point John was making. You don\'92t always need to pass the actual object, you can be more \
+		efficient and just pass some smaller details that you need from it. whatever the player\'92s battle_potion_usage needs\
+		from monster, add it as a parameter and then make sure to send it in the call, which will occur in the battle.py code.\
+\
+\
+\
+\'95 you clearly need to add additional mystics to each dungeon. perhaps as many as the level of the dungeon\'85.\
+\
+BUG!!\
+\'95 grid class floor counter is still going even after player dies / quits and then restarts a new game; because even though it\'92s a \'93new game start\'94, it\'92s also a new grid object construction, which simply updates from where it left off previously\'85.so, if I start game, quit, restart, the dungeon floor is listed as 2, because it\'92s the *second grid object* constructed. BECAUSE IT\'92S A ***CLASS** ATTRIBUTE, NOT AN INSTANCE ATTRIBUTE.\
+\
+it\'92s too hard to get / find a new weapon. you need to make treasure / monster item weapon aquisition much more common!\
+\
+mystic - make it so level 1 has 1 mystic, but after level 1 there is floor num +1 mystics (so level 2 has 3, etc)\
+\
+OR\
+\
+change scaling of dungeon floor to simply +1 width / height, not +2  \'85 can\'92t even remember where that is done, ha\
+\
+NEW BUG:\
+\'97 you successfully and simply updated the code so multiple merchants get created on subseqent floors, but if you visit one, any visit to another one gets flagged as \'91already visited\'92 doesn\'92t happen!!!  because all mystic rooms are treated as one \'91type\'92 and once a mystic is visited, you created a bool so they can\'92t be visited again; but this means it prevents a vist to ANY mystic, not just the one you already visited. SO, you need to make that logic more complex, so it knows to prevent you from re-visiting ONLY THE ONE AT THE COORDINATES YOU ALREADY VISITED, and therefore not any OTHER mystics on that same floor. So, you can\'92t just trigger one bool of \'91mystic visited\'92, you have to track the actual coordinate pair of that mystic, save it, and have THAT be what gets checked, not just a bool\'85.\
+\
+BUG:\
+first and only the first (?) attempt to use a battle potion (berzerk, escape) runs the -player method- for use and delivers the wrong message (\'91this is only for use during a battle\'85\'92) I\'92m honestly not even sure HOW that method is getting called! because I\'92m quite literally IN A BATTLE and then getting that display, so somehow that method and its response is getting called *from a battle* but I have no idea how!!!  look into this and fix\'85.\
+\
+higher level enemies have too many hit points. fix this.\
+\
+\
+\
+boss type monsters whose HP appear as ?? and who have a special attack\'85.\
+\
+\
+\'95 create_random_elixir and battle_create_elixir are totally redundant. you should have just 
+\f1\b one 
+\f0\b0 of these.\
+\
+\'95 BUG: using escape elixirs works, but causes TWO press_enter() calls to occur before returning to the main screen. why? track the flow of code and figure out where both are getting called, so you can remove one (or flag to bypass, if it\'92s needed in other scenaiors).\
+\
+\'95 BUG OF SAME TYPE: if you enter the \'91use potion\'92 menu, but then choose Q to quit, you also get a press_enter call, even though one is not needed. bypass this.\
+\
+bug:   after using Berzer Elixir once, player continued to get the bonus on every standard strike! ???\
+   	the berzerk exlir -was- removed from items, but obviously \'91potion_bonus\'92 wasn\'92t getting reset after the use.\
+\
+\
+\
+BUG:\
+sometimes when you quit the game and return to the main menu, there is no character loaded !!\
+\'97 determine exactly when, then determine why\
+\'97 probably if game state was loaded, then you die, drop to main menu for some reason doesn\'92t have player info ? \
+\
+BUG:\
+floor number scaling is off after loading a saved game. this makes sense, the incrementation of floor_level is starting\
+from scratch after loading a game, so even if it loads a dungeon with floor level = 3, when you reach the -next- level,\
+it will think \'93this is the first level i\'92ve created since the game was started\'94 and will increment incorrectly, labelling what should\
+be floor 4 as floor 1. \
+basically, pickle saves the instance, but the class attribute has not been saved, only the instance of it.\
+so to fix this, we need to store the value at time of save, and then update it when a game is loaded.\
+so, if player loads a game, we need to tell python to update the CLASS attribute value (not instance) to reflect the current\
+floor level. the instance loads the correct floor level for itself, but the class has been reset, which will screw up incrementation\
+/ updates to furthering floors from that point onward. \
+so, simply add a line of code to the load game area where we set the class attribute for grid, after loading the state, to equal the current floors floor level (not the one that matches the class attribute, but the one that is specific only to that instance \'97 I think that is you floor.chrono attribute). you see now why it\'92s important than an INSTANCE has its own attribute for tracking its floor leve, independent of the class attribute; it\'92s important we alwasy keep that info for any given instance, specific to that instance. since pickle only saves the instance not the class, this is crucical.\
+\
+but as for why we are losing the loaded player sometimes after dying or quitting game \'97 i\'92m thinking it has to do with loading the gamestate, loading in the class, and what is then updated. it\'92s not just a matter of the main menu printout not having access to the right name variable, there is literally no character loaded, because if you try to start a game, you can\'92t.\
+\
+BUG\
+- floor map still not printing as an item, because you don\'92t know how to print out the (variable quantit) item list in the item screen.\
+\
+BUG\
+- monster left behind a weapon, I said \'91no\'92, I had a press enter calling after pressing no\'85and there was no \'91ok, keep your\'85\'92 type message \'97 there should be, though! why did i not get the message, and did get a press_enter() ?\
+\
+BUG ?\
+- why am I gaining 10 HP when drinking standard Health Elixir on floor level 3, player level 2 ?  \'97 this may have to do with different events being triggered depending on if you entered \'92n\'92 or \'91no\'92 \'97 you had if conditionals that only trigger on \'92n\'92, so if you type \'91no\'92, the code in that block (e.g. \'91ok keep your\'85\'92) would never be triggered.\
+\
+Q: for john \'97 if you modify the code in a class .py file, then play the game and load a pickle save game of an instance of that class from pickle, why does it still work? or does it? what am I not thinking through here?\
+\
+\
+BUG:\
+on higher floor levels, the run difficulty of enemies becomes impossible (e.g. run diff = 22).  You need to cap the highest possible run diff at 19.\
+\
+\
+\
+\
+}
