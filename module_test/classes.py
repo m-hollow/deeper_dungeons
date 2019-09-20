@@ -83,7 +83,14 @@ class GameGrid():
 	def update_player_location(self):
 		"""updates the grid_matrix to show the X for the player coordinates (and change prev room back to a *)"""
 
-		self.grid_matrix[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' * '
+		# can I just switch the following line to a different icon to do the whole 'leave a trail' thing ??
+		# issue: the starting out coords for player are 0,0 so this will change coord 0,0 to ' v' after player moves, ugh!
+
+		if self.all_room_grid[self.player.previous_coords[0]][self.player.previous_coords[1]]['Visited']:
+			self.grid_matrix[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' . '
+		else:
+			self.grid_matrix[self.player.previous_coords[0]][self.player.previous_coords[1]] = ' * '
+
 		self.grid_matrix[self.player.player_location[0]][self.player.player_location[1]] = ' X '
 
 
@@ -453,7 +460,7 @@ class Player():
 
 		# player location on grid. continually updated during gameplay.
 		self.player_location = [(self.settings.grid_size - 1), (int(self.settings.grid_size / 2) - 1)]
-		self.previous_coords = [0,0]
+		self.previous_coords = [0, 0]
 
 	def get_level_up_val(self):
 		if self.level == 1:

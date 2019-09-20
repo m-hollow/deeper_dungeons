@@ -673,7 +673,7 @@ def monster_leaves_item(settings, player, monster):
 def battle_create_elixir(settings):
 	"""create an elixir if one is left behind by a monster. Scales with difficulty setting"""
 	elixir = {}
-	elixir_types = ['health', 'health', 'health', 'berzerk', 'berzerk', 'poison', 'stamina', 'escape', 'health max'] # 3x health so that it's more likely a choice.
+	elixir_types = ['health', 'health', 'berzerk', 'berzerk', 'poison', 'stamina', 'escape', 'health max'] # 3x health so that it's more likely a choice.
 
 	chosen_elixir = choice(elixir_types)
 

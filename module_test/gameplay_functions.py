@@ -396,7 +396,7 @@ def treasure_event(settings, player):
 
 	item_level = settings.difficulty	# used to determine quality of weapons / armor on call to their constructors
 
-	treasures = ['gold', 'gold', 'gold', 'potion', 'potion', 'weapon', 'weapon']
+	treasures = ['gold', 'gold', 'gold', 'potion', 'potion', 'weapon', 'weapon'] # three or two golds in here ?
 
 	treasure_type = choice(treasures)
 
@@ -576,7 +576,7 @@ def create_random_elixir(settings):
 	"""create an elixir at random for each visit to a Mystic room. Scales with difficulty setting"""
 
 	elixir = {}
-	elixir_types = ['health', 'health', 'health', 'berzerk', 'berzerk', 'poison', 'stamina', 'escape', 'health max'] # 3x health so that it's more likely a choice.
+	elixir_types = ['health', 'health', 'berzerk', 'berzerk', 'poison', 'stamina', 'escape', 'health max'] # 3x health so that it's more likely a choice.
 
 	chosen_elixir = choice(elixir_types)
 
