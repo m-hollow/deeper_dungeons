@@ -269,7 +269,6 @@ class GameGrid():
 
 	def print_grid(self):
 		"""print the visual game grid"""
-
 		print('\nLV.{}'.format(self.floor_chrono))	# will find the class attribute floor_level after looking at instance attributes.
 
 		for r in self.grid_matrix:
@@ -325,7 +324,7 @@ class GameGrid():
 
 		clear_screen()
 
-		print('#  FLOOR {} MAP  #'.format(self.floor_chrono))
+		print('#  DUNGEON MAP  #')
 		print()
 
 		r = 0
@@ -355,13 +354,14 @@ class GameGrid():
 
 		map_copy[self.player.player_location[0]][self.player.player_location[1]] = ' X '
 
+		print('LV.{}'.format(self.floor_chrono))
 		# print the dev grid
 		for row in map_copy:
 			for val in row:
 				print(val, end = '')
 			print()
 
-		print('\n')
+		print()
 		print('X\t\t{}'.format(self.player.info['Name']))
 		print('T\t\tTreasure')
 		print('M\t\tMystic Merchant')
@@ -752,7 +752,7 @@ class Monster():
 			return randint(8, 11)
 		if self.difficulty == 3:
 			return randint(10, 15)
-		if self.difficulty == 4:
+		if self.difficulty >= 4:
 			return randint(11, 17)
 
 	def get_diff_string(self):
@@ -847,7 +847,7 @@ class Monster():
 		elif self.actual_level == 3:
 			return ((self.dice.roll(8)) + 4)
 		elif self.actual_level > 3:
-			return ((self.dice.roll(20)) + 9)
+			return ((self.dice.roll(20)) + 8)
 
 	def print_stats(self):
 		print('# MONSTER STATS       #')     #23 chars
